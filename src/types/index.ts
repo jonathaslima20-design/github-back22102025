@@ -43,6 +43,17 @@ export interface ProductImage {
   is_featured: boolean;
 }
 
+export interface PriceTier {
+  id?: string;
+  product_id?: string;
+  min_quantity: number;
+  max_quantity: number | null;
+  unit_price: number;
+  discounted_unit_price?: number | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface Product {
   id: string;
   user_id: string;
@@ -65,11 +76,13 @@ export interface Product {
   short_description?: string;
   is_visible_on_storefront?: boolean;
   external_checkout_url?: string;
+  has_tiered_pricing?: boolean;
   created_at: string;
   updated_at?: string;
   product_images?: ProductImage[];
   colors?: string[];
   sizes?: string[];
+  price_tiers?: PriceTier[];
 }
 
 export interface ProductCategory {
