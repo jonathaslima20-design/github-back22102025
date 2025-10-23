@@ -27,6 +27,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { Switch } from '@/components/ui/switch';
 import { DiscountPriceInput } from '@/components/ui/discount-price-input';
+import { TieredPricingManager, type PriceTier } from '@/components/ui/tiered-pricing-manager';
 import {
   Card,
   CardContent,
@@ -69,6 +70,13 @@ const formSchema = z.object({
   price: z.string().optional(),
   discounted_price: z.string().optional(),
   is_starting_price: z.boolean().default(false),
+  has_tiered_pricing: z.boolean().default(false),
+  price_tiers: z.array(z.object({
+    min_quantity: z.number().min(1),
+    max_quantity: z.number().nullable(),
+    unit_price: z.number().min(0.01),
+    discounted_unit_price: z.number().nullable()
+  })).optional(),
   short_description: z.string().max(60, 'Descrição breve muito longa (máx. 60 caracteres)').optional(),
   description: z.string().min(1, 'Descrição completa é obrigatória'),
   is_visible_on_storefront: z.boolean().default(true),
@@ -84,6 +92,8 @@ export default function CreateProductPage() {
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [sizesOpen, setSizesOpen] = useState(false);
   const [colorsOpen, setColorsOpen] = useState(false);
+  const [pricingMode, setPricingMode] = useState<'simple' | 'tiered'>('simple');
+  const [priceTiers, setPriceTiers] = useState<PriceTier[]>([]);
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -100,6 +110,8 @@ export default function CreateProductPage() {
       price: '',
       discounted_price: '',
       is_starting_price: false,
+      has_tiered_pricing: false,
+      price_tiers: [],
       short_description: '',
       description: '',
       is_visible_on_storefront: true,
@@ -271,28 +283,54 @@ export default function CreateProductPage() {
 
       console.log('Processed prices:', { originalPrice, discountedPrice });
 
-      // Only validate price if it's provided
-      if (values.price && (!originalPrice || originalPrice <= 0)) {
-        toast.error('Preço inválido. Verifique o valor informado.');
-        return;
-      }
+      // Validate pricing based on mode
+      if (pricingMode === 'tiered') {
+        if (priceTiers.length === 0) {
+          toast.error('Adicione pelo menos uma faixa de preço para usar preços escalonados');
+          return;
+        }
 
-      // Validate discount price
-      if (discountedPrice && originalPrice && discountedPrice >= originalPrice) {
-        toast.error('O preço com desconto deve ser menor que o preço original');
-        return;
+        const sortedTiers = [...priceTiers].sort((a, b) => a.min_quantity - b.min_quantity);
+        if (sortedTiers[0].min_quantity !== 1) {
+          toast.error('A primeira faixa de preço deve começar na quantidade 1');
+          return;
+        }
+
+        for (const tier of priceTiers) {
+          if (tier.unit_price <= 0) {
+            toast.error('Todos os preços unitários devem ser maiores que zero');
+            return;
+          }
+          if (tier.discounted_unit_price && tier.discounted_unit_price >= tier.unit_price) {
+            toast.error('O preço promocional deve ser menor que o preço normal');
+            return;
+          }
+        }
+      } else {
+        // Only validate price if it's provided
+        if (values.price && (!originalPrice || originalPrice <= 0)) {
+          toast.error('Preço inválido. Verifique o valor informado.');
+          return;
+        }
+
+        // Validate discount price
+        if (discountedPrice && originalPrice && discountedPrice >= originalPrice) {
+          toast.error('O preço com desconto deve ser menor que o preço original');
+          return;
+        }
       }
 
       const productData = {
         title: values.title,
-        category: sanitizedCategories, // Use sanitized categories
+        category: sanitizedCategories,
         brand: values.brand || null,
         gender: values.gender || null,
         colors: values.colors && values.colors.length > 0 ? values.colors : null,
         sizes: [...(values.apparel_sizes || []), ...(values.shoe_sizes || []), ...(values.custom_sizes || [])].length > 0 ? [...(values.apparel_sizes || []), ...(values.shoe_sizes || []), ...(values.custom_sizes || [])] : null,
-        price: originalPrice,
-        discounted_price: discountedPrice,
-        is_starting_price: values.is_starting_price,
+        price: pricingMode === 'simple' ? originalPrice : null,
+        discounted_price: pricingMode === 'simple' ? discountedPrice : null,
+        is_starting_price: pricingMode === 'simple' ? values.is_starting_price : false,
+        has_tiered_pricing: pricingMode === 'tiered',
         description: values.description,
         short_description: values.short_description || null,
         status: 'disponivel',
@@ -316,6 +354,31 @@ export default function CreateProductPage() {
       }
 
       logCategoryOperation('PRODUCT_CREATED', { id: product.id, title: product.title });
+
+      // Save price tiers if using tiered pricing
+      if (pricingMode === 'tiered' && priceTiers.length > 0) {
+        logCategoryOperation('SAVING_PRICE_TIERS', { productId: product.id, tiersCount: priceTiers.length });
+
+        const tiersToInsert = priceTiers.map(tier => ({
+          product_id: product.id,
+          min_quantity: tier.min_quantity,
+          max_quantity: tier.max_quantity,
+          unit_price: tier.unit_price,
+          discounted_unit_price: tier.discounted_unit_price
+        }));
+
+        const { error: tiersError } = await supabase
+          .from('product_price_tiers')
+          .insert(tiersToInsert);
+
+        if (tiersError) {
+          console.error('Error saving price tiers:', tiersError);
+          await supabase.from('products').delete().eq('id', product.id);
+          throw new Error(`Erro ao salvar faixas de preço: ${tiersError.message}`);
+        }
+
+        logCategoryOperation('PRICE_TIERS_SAVED', { productId: product.id });
+      }
 
       // Upload images
       logCategoryOperation('IMAGE_UPLOAD_START', { count: selectedImages.length });
@@ -628,48 +691,93 @@ export default function CreateProductPage() {
                   <CardTitle>Preços</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <FormField
-                    control={form.control}
-                    name="price"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormControl>
-                          <DiscountPriceInput
-                            originalPrice={field.value}
-                            discountedPrice={form.watch('discounted_price') || ''}
-                            onOriginalPriceChange={field.onChange}
-                            onDiscountedPriceChange={(value) => form.setValue('discounted_price', value)}
-                            currency={user?.currency || 'BRL'}
-                            locale={user?.language || 'pt-BR'}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <FormLabel>Tipo de Precificação</FormLabel>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">
+                          {pricingMode === 'simple' ? 'Preço Único' : 'Preço Escalonado'}
+                        </span>
+                        <Switch
+                          checked={pricingMode === 'tiered'}
+                          onCheckedChange={(checked) => {
+                            const newMode = checked ? 'tiered' : 'simple';
+                            setPricingMode(newMode);
+                            form.setValue('has_tiered_pricing', checked);
+                            if (checked) {
+                              form.setValue('price', '');
+                              form.setValue('discounted_price', '');
+                              form.setValue('is_starting_price', false);
+                            } else {
+                              setPriceTiers([]);
+                            }
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {pricingMode === 'simple'
+                        ? 'Defina um preço fixo para o produto, independente da quantidade.'
+                        : 'Defina preços diferentes baseados na quantidade comprada.'}
+                    </p>
+                  </div>
 
-                  <FormField
-                    control={form.control}
-                    name="is_starting_price"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                        <div className="space-y-0.5">
-                          <FormLabel className="text-base">
-                            Preço inicial
-                          </FormLabel>
-                          <FormDescription>
-                            Marque esta opção se o preço informado é um valor inicial ("A partir de")
-                          </FormDescription>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
+                  {pricingMode === 'simple' ? (
+                    <>
+                      <FormField
+                        control={form.control}
+                        name="price"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              <DiscountPriceInput
+                                originalPrice={field.value}
+                                discountedPrice={form.watch('discounted_price') || ''}
+                                onOriginalPriceChange={field.onChange}
+                                onDiscountedPriceChange={(value) => form.setValue('discounted_price', value)}
+                                currency={user?.currency || 'BRL'}
+                                locale={user?.language || 'pt-BR'}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="is_starting_price"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                            <div className="space-y-0.5">
+                              <FormLabel className="text-base">
+                                Preço inicial
+                              </FormLabel>
+                              <FormDescription>
+                                Marque esta opção se o preço informado é um valor inicial ("A partir de")
+                              </FormDescription>
+                            </div>
+                            <FormControl>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                    </>
+                  ) : (
+                    <TieredPricingManager
+                      tiers={priceTiers}
+                      onChange={(newTiers) => {
+                        setPriceTiers(newTiers);
+                        form.setValue('price_tiers', newTiers);
+                      }}
+                      currency={user?.currency || 'BRL'}
+                      locale={user?.language || 'pt-BR'}
+                    />
+                  )}
                 </CardContent>
               </Card>
 
