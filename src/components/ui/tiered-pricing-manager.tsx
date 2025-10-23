@@ -192,8 +192,13 @@ export function TieredPricingManager({
       return;
     }
 
+    let minQuantity = newTier.min_quantity;
+    if (tiers.length === 0 && minQuantity !== 1) {
+      minQuantity = 1;
+    }
+
     const tierToAdd: PriceTier = {
-      min_quantity: newTier.min_quantity,
+      min_quantity: minQuantity,
       max_quantity: newTier.max_quantity ?? null,
       unit_price: newTier.unit_price,
       discounted_unit_price: newTier.discounted_unit_price ?? null
@@ -202,7 +207,7 @@ export function TieredPricingManager({
     onChange([...tiers, tierToAdd]);
 
     setNewTier({
-      min_quantity: (newTier.max_quantity ?? 0) + 1,
+      min_quantity: (newTier.max_quantity ?? minQuantity) + 1,
       max_quantity: null,
       unit_price: 0,
       discounted_unit_price: null

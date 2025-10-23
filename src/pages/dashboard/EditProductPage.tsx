@@ -673,6 +673,13 @@ export default function EditProductPage() {
       if (pricingMode === 'tiered') {
         logCategoryOperation('UPDATING_PRICE_TIERS', { productId: id });
 
+        const sortedTiers = [...priceTiers].sort((a, b) => a.min_quantity - b.min_quantity);
+
+        if (sortedTiers.length > 0 && sortedTiers[0].min_quantity !== 1) {
+          sortedTiers[0].min_quantity = 1;
+          toast.warning('A primeira faixa foi ajustada para começar na quantidade 1');
+        }
+
         const { error: deleteAllError } = await supabase
           .from('product_price_tiers')
           .delete()
@@ -682,8 +689,6 @@ export default function EditProductPage() {
           console.error('Error deleting existing price tiers:', deleteAllError);
           throw new Error(`Erro ao remover faixas de preço existentes: ${deleteAllError.message}`);
         }
-
-        const sortedTiers = [...priceTiers].sort((a, b) => a.min_quantity - b.min_quantity);
 
         const tiersToInsert = sortedTiers.map(tier => ({
           product_id: id,
