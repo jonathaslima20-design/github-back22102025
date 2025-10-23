@@ -622,12 +622,6 @@ export default function EditProductPage() {
           return;
         }
 
-        const sortedTiers = [...priceTiers].sort((a, b) => a.min_quantity - b.min_quantity);
-        if (sortedTiers[0].min_quantity !== 1) {
-          toast.error('A primeira faixa de preço deve começar na quantidade 1');
-          return;
-        }
-
         for (const tier of priceTiers) {
           if (tier.unit_price <= 0) {
             toast.error('Todos os preços unitários devem ser maiores que zero');
