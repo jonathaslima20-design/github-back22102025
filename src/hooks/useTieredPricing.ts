@@ -18,7 +18,7 @@ interface UseTieredPricingResult {
 }
 
 export function useTieredPricing(
-  productId: string,
+  productId: string | undefined,
   basePrice: number,
   baseDiscountedPrice?: number,
   hasTieredPricing?: boolean
@@ -28,7 +28,7 @@ export function useTieredPricing(
   const [error, setError] = useState<Error | null>(null);
 
   const loadTiers = useCallback(async () => {
-    if (!hasTieredPricing) {
+    if (!hasTieredPricing || !productId) {
       setTiers([]);
       return;
     }

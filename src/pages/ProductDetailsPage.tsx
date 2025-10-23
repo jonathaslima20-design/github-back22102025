@@ -43,6 +43,13 @@ export default function ProductDetailsPage() {
   const { t } = useTranslation(language);
   const { addToCart } = useCart();
 
+  const { tiers: priceTiers, loading: loadingTiers } = useTieredPricing(
+    product?.id,
+    product?.price || 0,
+    product?.discounted_price,
+    product?.has_tiered_pricing
+  );
+
   useEffect(() => {
     setShareSupported(!!navigator.share && window.isSecureContext);
 
@@ -234,13 +241,6 @@ export default function ProductDetailsPage() {
   const totalInCart = getItemQuantity(product.id);
   const isAvailable = product.status === 'disponivel';
   const hasPrice = product.price && product.price > 0;
-
-  const { tiers: priceTiers, loading: loadingTiers } = useTieredPricing(
-    product.id,
-    product.price || 0,
-    product.discounted_price,
-    product.has_tiered_pricing
-  );
 
   // Check if product has color or size options
   const hasColors = product.colors && 
