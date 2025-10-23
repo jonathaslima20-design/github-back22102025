@@ -772,8 +772,10 @@ export default function CreateProductPage() {
                     <TieredPricingManager
                       tiers={priceTiers}
                       onChange={(newTiers) => {
+                        console.log('TieredPricingManager onChange called with:', newTiers);
                         setPriceTiers(newTiers);
                         form.setValue('price_tiers', newTiers);
+                        console.log('State updated. Current priceTiers:', newTiers);
                       }}
                       currency={user?.currency || 'BRL'}
                       locale={user?.language || 'pt-BR'}

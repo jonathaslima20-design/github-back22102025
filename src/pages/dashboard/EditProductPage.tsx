@@ -226,7 +226,10 @@ export default function EditProductPage() {
 
       // Load price tiers if product has tiered pricing
       let loadedTiers: PriceTier[] = [];
+      console.log('Product has_tiered_pricing:', product.has_tiered_pricing);
+
       if (product.has_tiered_pricing) {
+        console.log('Loading price tiers for product:', id);
         const { data: tiersData, error: tiersError } = await supabase
           .from('product_price_tiers')
           .select('*')
@@ -236,6 +239,7 @@ export default function EditProductPage() {
         if (tiersError) {
           console.error('Error loading price tiers:', tiersError);
         } else if (tiersData) {
+          console.log('Loaded tiers from database:', tiersData);
           loadedTiers = tiersData.map(tier => ({
             id: tier.id,
             min_quantity: tier.min_quantity,
@@ -245,11 +249,15 @@ export default function EditProductPage() {
           }));
           setPriceTiers(loadedTiers);
           setOriginalTierIds(new Set(loadedTiers.map(t => t.id).filter(id => id !== undefined) as string[]));
+          console.log('Price tiers state updated:', loadedTiers);
+        } else {
+          console.log('No price tiers found in database');
         }
       }
 
       // Set pricing mode based on product data
       const hasTiered = product.has_tiered_pricing && loadedTiers.length > 0;
+      console.log('Setting pricing mode:', hasTiered ? 'tiered' : 'simple');
       setPricingMode(hasTiered ? 'tiered' : 'simple');
 
       form.reset({
@@ -570,10 +578,18 @@ export default function EditProductPage() {
     try {
       setIsLoading(true);
 
+      console.log('=== EDIT PRODUCT SUBMIT ===');
+      console.log('Pricing Mode:', pricingMode);
+      console.log('PriceTiers State:', priceTiers);
+      console.log('Form Values price_tiers:', values.price_tiers);
+      console.log('has_tiered_pricing:', values.has_tiered_pricing);
+
       logCategoryOperation('PRODUCT_UPDATE_START', {
         productId: id,
         title: values.title,
-        categories: values.categories
+        categories: values.categories,
+        pricingMode,
+        priceTiersCount: priceTiers.length
       });
 
       // Validate and sanitize categories before saving
@@ -665,7 +681,12 @@ export default function EditProductPage() {
 
       // Handle price tiers update
       if (pricingMode === 'tiered') {
-        logCategoryOperation('UPDATING_PRICE_TIERS', { productId: id });
+        logCategoryOperation('UPDATING_PRICE_TIERS', { productId: id, currentTiers: priceTiers });
+
+        if (priceTiers.length === 0) {
+          toast.error('Adicione pelo menos uma faixa de preço');
+          return;
+        }
 
         const sortedTiers = [...priceTiers].sort((a, b) => a.min_quantity - b.min_quantity);
 
@@ -692,16 +713,20 @@ export default function EditProductPage() {
           discounted_unit_price: tier.discounted_unit_price
         }));
 
-        const { error: insertError } = await supabase
+        console.log('Inserting price tiers:', tiersToInsert);
+
+        const { data: insertedData, error: insertError } = await supabase
           .from('product_price_tiers')
-          .insert(tiersToInsert);
+          .insert(tiersToInsert)
+          .select();
 
         if (insertError) {
           console.error('Error inserting price tiers:', insertError);
           throw new Error(`Erro ao adicionar faixas de preço: ${insertError.message}`);
         }
 
-        logCategoryOperation('PRICE_TIERS_UPDATED', { productId: id });
+        console.log('Price tiers inserted successfully:', insertedData);
+        logCategoryOperation('PRICE_TIERS_UPDATED', { productId: id, insertedCount: insertedData?.length });
       } else {
         const { error: deleteTiersError } = await supabase
           .from('product_price_tiers')
@@ -1124,8 +1149,10 @@ export default function EditProductPage() {
                     <TieredPricingManager
                       tiers={priceTiers}
                       onChange={(newTiers) => {
+                        console.log('TieredPricingManager onChange called with:', newTiers);
                         setPriceTiers(newTiers);
                         form.setValue('price_tiers', newTiers);
+                        console.log('State updated. Current priceTiers:', newTiers);
                       }}
                       currency={user?.currency || 'BRL'}
                       locale={user?.language || 'pt-BR'}
