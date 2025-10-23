@@ -1,0 +1,117 @@
+import { supabase } from './supabase';
+import type { PriceTier } from '@/types';
+
+export interface TieredPricingResult {
+  unitPrice: number;
+  totalPrice: number;
+  appliedTier: PriceTier | null;
+  savings: number;
+  nextTier: PriceTier | null;
+  nextTierSavings: number;
+  unitsToNextTier: number;
+}
+
+export async function fetchProductPriceTiers(productId: string): Promise<PriceTier[]> {
+  const { data, error } = await supabase
+    .from('product_price_tiers')
+    .select('*')
+    .eq('product_id', productId)
+    .order('min_quantity', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching price tiers:', error);
+    return [];
+  }
+
+  return data || [];
+}
+
+export function getMinimumPriceFromTiers(tiers: PriceTier[]): number | null {
+  if (!tiers || tiers.length === 0) return null;
+
+  const prices = tiers.map(tier => tier.discounted_unit_price || tier.unit_price);
+  return Math.min(...prices);
+}
+
+export function calculateApplicablePrice(
+  quantity: number,
+  tiers: PriceTier[],
+  basePrice: number,
+  baseDiscountedPrice?: number
+): TieredPricingResult {
+  if (!tiers || tiers.length === 0) {
+    const unitPrice = baseDiscountedPrice || basePrice;
+    return {
+      unitPrice,
+      totalPrice: unitPrice * quantity,
+      appliedTier: null,
+      savings: 0,
+      nextTier: null,
+      nextTierSavings: 0,
+      unitsToNextTier: 0,
+    };
+  }
+
+  const sortedTiers = [...tiers].sort((a, b) => a.min_quantity - b.min_quantity);
+
+  const applicableTier = sortedTiers
+    .filter(tier => {
+      const meetsMin = quantity >= tier.min_quantity;
+      const meetsMax = tier.max_quantity === null || quantity <= tier.max_quantity;
+      return meetsMin && meetsMax;
+    })
+    .pop();
+
+  const unitPrice = applicableTier
+    ? (applicableTier.discounted_unit_price || applicableTier.unit_price)
+    : (baseDiscountedPrice || basePrice);
+
+  const totalPrice = unitPrice * quantity;
+
+  const baseUnitPrice = baseDiscountedPrice || basePrice;
+  const baseTotalPrice = baseUnitPrice * quantity;
+  const savings = baseTotalPrice - totalPrice;
+
+  const nextTier = sortedTiers.find(tier => tier.min_quantity > quantity) || null;
+
+  let nextTierSavings = 0;
+  let unitsToNextTier = 0;
+
+  if (nextTier) {
+    const nextTierUnitPrice = nextTier.discounted_unit_price || nextTier.unit_price;
+    const nextTierTotalPrice = nextTierUnitPrice * nextTier.min_quantity;
+    const baseTotalAtNextTier = baseUnitPrice * nextTier.min_quantity;
+    nextTierSavings = baseTotalAtNextTier - nextTierTotalPrice;
+    unitsToNextTier = nextTier.min_quantity - quantity;
+  }
+
+  return {
+    unitPrice,
+    totalPrice,
+    appliedTier: applicableTier || null,
+    savings,
+    nextTier,
+    nextTierSavings,
+    unitsToNextTier,
+  };
+}
+
+export function formatPriceTierRange(tier: PriceTier): string {
+  if (tier.max_quantity === null) {
+    return `${tier.min_quantity}+ unidades`;
+  }
+  if (tier.min_quantity === tier.max_quantity) {
+    return `${tier.min_quantity} unidade${tier.min_quantity > 1 ? 's' : ''}`;
+  }
+  return `${tier.min_quantity} - ${tier.max_quantity} unidades`;
+}
+
+export function getBestValueTier(tiers: PriceTier[]): PriceTier | null {
+  if (!tiers || tiers.length === 0) return null;
+
+  return tiers.reduce((best, current) => {
+    const bestPrice = best.discounted_unit_price || best.unit_price;
+    const currentPrice = current.discounted_unit_price || current.unit_price;
+    return currentPrice < bestPrice ? current : best;
+  }, tiers[0]);
+}

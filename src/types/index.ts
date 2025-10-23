@@ -175,7 +175,9 @@ export interface CartItem {
   selectedSize?: string;
   availableColors?: string[];
   availableSizes?: string[];
-  variantId?: string; // Unique identifier for this specific variant
+  variantId?: string;
+  has_tiered_pricing?: boolean;
+  applied_tier_price?: number;
 }
 
 export interface CartState {

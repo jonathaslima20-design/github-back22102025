@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { X, Plus, Minus, Trash2, ShoppingCart, MessageCircle, Edit3, Palette, Ruler } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X, Plus, Minus, Trash2, ShoppingCart, MessageCircle, Edit3, Palette, Ruler, TrendingDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -23,8 +23,17 @@ import { useCart } from '@/contexts/CartContext';
 import { formatCurrencyI18n, generateWhatsAppMessage, useTranslation, type SupportedLanguage, type SupportedCurrency } from '@/lib/i18n';
 import { generateWhatsAppUrl } from '@/lib/utils';
 import { trackWhatsAppClick } from '@/lib/tracking';
-import type { User } from '@/types';
+import type { User, PriceTier } from '@/types';
 import { generateCartOrderMessage } from '@/lib/cartUtils';
+import { fetchProductPriceTiers, calculateApplicablePrice } from '@/lib/tieredPricingUtils';
+import { supabase } from '@/lib/supabase';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import TieredPricingIndicator from '@/components/product/TieredPricingIndicator';
 
 interface CartModalProps {
   open: boolean;
@@ -46,6 +55,34 @@ export default function CartModal({
   const [sendingOrder, setSendingOrder] = useState(false);
   const [editingNotes, setEditingNotes] = useState<string | null>(null);
   const [editingVariant, setEditingVariant] = useState<string | null>(null);
+  const [productTiers, setProductTiers] = useState<Map<string, { tiers: PriceTier[], hasTieredPricing: boolean }>>(new Map());
+
+  useEffect(() => {
+    const loadTieredPricing = async () => {
+      const tiersMap = new Map<string, { tiers: PriceTier[], hasTieredPricing: boolean }>();
+
+      for (const item of cart.items) {
+        const { data: product } = await supabase
+          .from('products')
+          .select('has_tiered_pricing')
+          .eq('id', item.id)
+          .single();
+
+        if (product?.has_tiered_pricing) {
+          const tiers = await fetchProductPriceTiers(item.id);
+          tiersMap.set(item.id, { tiers, hasTieredPricing: true });
+        } else {
+          tiersMap.set(item.id, { tiers: [], hasTieredPricing: false });
+        }
+      }
+
+      setProductTiers(tiersMap);
+    };
+
+    if (cart.items.length > 0) {
+      loadTieredPricing();
+    }
+  }, [cart.items.map(i => `${i.id}-${i.quantity}`).join(',')]);
 
   const generateOrderMessage = () => {
     return generateCartOrderMessage(
@@ -141,8 +178,27 @@ export default function CartModal({
             {/* Cart Items */}
             <div className="flex-1 overflow-y-auto space-y-3 max-h-[400px]">
               {cart.items.map((item) => {
-                const price = item.discounted_price || item.price;
-                const itemTotal = price * item.quantity;
+                const tierInfo = productTiers.get(item.id);
+                const hasTieredPricing = tierInfo?.hasTieredPricing || false;
+                const tiers = tierInfo?.tiers || [];
+
+                let price = item.discounted_price || item.price;
+                let itemTotal = price * item.quantity;
+                let pricingInfo = null;
+
+                if (hasTieredPricing && tiers.length > 0) {
+                  const result = calculateApplicablePrice(
+                    item.quantity,
+                    tiers,
+                    item.price,
+                    item.discounted_price
+                  );
+                  price = result.unitPrice;
+                  itemTotal = result.totalPrice;
+                  pricingInfo = result;
+                } else {
+                  itemTotal = price * item.quantity;
+                }
 
                 return (
                   <div key={item.id} className="flex gap-3 p-3 border rounded-lg">
@@ -161,10 +217,43 @@ export default function CartModal({
                         {item.title}
                       </h4>
                       
-                      <div className="text-sm text-primary font-semibold mb-2">
-                        {item.is_starting_price ? t('product.starting_from') + ' ' : ''}
-                        {formatCurrencyI18n(price, currency, language)}
+                      <div className="space-y-1 mb-2">
+                        <div className="flex items-center gap-2">
+                          <div className="text-sm text-primary font-semibold">
+                            {item.is_starting_price ? t('product.starting_from') + ' ' : ''}
+                            {formatCurrencyI18n(price, currency, language)}
+                          </div>
+                          {hasTieredPricing && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Badge className="bg-blue-600 text-white text-xs cursor-help">
+                                    <TrendingDown className="h-3 w-3 mr-1" />
+                                    Preço Escalonado
+                                  </Badge>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p className="text-xs">Preço calculado por quantidade</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                        </div>
+
                       </div>
+
+                      {pricingInfo && (pricingInfo.savings > 0 || (pricingInfo.nextTier && pricingInfo.unitsToNextTier > 0)) && (
+                        <div className="mb-2">
+                          <TieredPricingIndicator
+                            currentQuantity={item.quantity}
+                            nextTierQuantity={pricingInfo.nextTier?.min_quantity || 0}
+                            nextTierSavings={pricingInfo.nextTierSavings}
+                            appliedTierSavings={pricingInfo.savings}
+                            currency={currency}
+                            language={language}
+                          />
+                        </div>
+                      )}
 
                       {/* Selected Variant Display */}
                       {(item.selectedColor || item.selectedSize) && (

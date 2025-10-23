@@ -23,6 +23,9 @@ import ImageGallery from '@/components/details/ImageGallery';
 import ItemDescription from '@/components/details/ItemDescription';
 import ContactSidebar from '@/components/details/ContactSidebar';
 import ProductVariantModal from '@/components/product/ProductVariantModal';
+import TieredPricingTable from '@/components/details/TieredPricingTable';
+import TieredPricingSkeleton from '@/components/details/TieredPricingSkeleton';
+import { useTieredPricing } from '@/hooks/useTieredPricing';
 
 export default function ProductDetailsPage() {
   const { slug, productId } = useParams();
@@ -231,6 +234,13 @@ export default function ProductDetailsPage() {
   const totalInCart = getItemQuantity(product.id);
   const isAvailable = product.status === 'disponivel';
   const hasPrice = product.price && product.price > 0;
+
+  const { tiers: priceTiers, loading: loadingTiers } = useTieredPricing(
+    product.id,
+    product.price || 0,
+    product.discounted_price,
+    product.has_tiered_pricing
+  );
 
   // Check if product has color or size options
   const hasColors = product.colors && 
@@ -510,6 +520,23 @@ export default function ProductDetailsPage() {
                   <p className="text-sm text-green-800 dark:text-green-200 text-center">
                     {totalInCart} {totalInCart === 1 ? 'item' : 'itens'} no carrinho
                   </p>
+                </div>
+              )}
+
+              {/* Tiered Pricing Table */}
+              {product.has_tiered_pricing && (
+                <div className="mt-8">
+                  {loadingTiers ? (
+                    <TieredPricingSkeleton />
+                  ) : priceTiers.length > 0 ? (
+                    <TieredPricingTable
+                      tiers={priceTiers}
+                      basePrice={product.price || 0}
+                      baseDiscountedPrice={product.discounted_price}
+                      currency={currency}
+                      language={language}
+                    />
+                  ) : null}
                 </div>
               )}
 

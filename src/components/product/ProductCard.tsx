@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingCart } from 'lucide-react';
+import { ShoppingCart, TrendingDown } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -8,7 +8,9 @@ import { formatCurrencyI18n, useTranslation, type SupportedLanguage, type Suppor
 import { useCart } from '@/contexts/CartContext';
 import ProductVariantModal from './ProductVariantModal';
 import type { Product } from '@/types';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { fetchProductPriceTiers, getMinimumPriceFromTiers } from '@/lib/tieredPricingUtils';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface ProductCardProps {
   product: Product;
@@ -26,14 +28,32 @@ export function ProductCard({
   const { t } = useTranslation(language);
   const { addToCart, isInCart, getItemQuantity } = useCart();
   const [showVariantModal, setShowVariantModal] = useState(false);
+  const [minimumTieredPrice, setMinimumTieredPrice] = useState<number | null>(null);
+  const [loadingTiers, setLoadingTiers] = useState(false);
+
+  useEffect(() => {
+    if (product.has_tiered_pricing) {
+      setLoadingTiers(true);
+      fetchProductPriceTiers(product.id)
+        .then(tiers => {
+          const minPrice = getMinimumPriceFromTiers(tiers);
+          setMinimumTieredPrice(minPrice);
+        })
+        .catch(err => console.error('Error loading price tiers:', err))
+        .finally(() => setLoadingTiers(false));
+    }
+  }, [product.id, product.has_tiered_pricing]);
 
   // Calculate discount information
+  const effectiveMinPrice = product.has_tiered_pricing && minimumTieredPrice ? minimumTieredPrice : null;
   const hasDiscount = product.discounted_price && product.discounted_price < product.price;
-  const displayPrice = hasDiscount ? product.discounted_price : product.price;
+  const baseDisplayPrice = hasDiscount ? product.discounted_price : product.price;
+  const displayPrice = effectiveMinPrice || baseDisplayPrice;
   const originalPrice = hasDiscount ? product.price : null;
-  const discountPercentage = hasDiscount 
+  const discountPercentage = hasDiscount
     ? Math.round(((product.price - product.discounted_price!) / product.price) * 100)
     : null;
+  const isTieredPricing = product.has_tiered_pricing && effectiveMinPrice !== null;
 
   const isAvailable = product.status === 'disponivel';
   const hasPrice = product.price && product.price > 0;
@@ -119,14 +139,29 @@ export function ProductCard({
               />
             </div>
             
-            {/* Discount Badge - Top Right */}
-            {hasDiscount && discountPercentage && (
-              <div className="absolute top-3 right-3 md:top-5 md:right-5">
+            {/* Badges - Top Right */}
+            <div className="absolute top-3 right-3 md:top-5 md:right-5 flex flex-col gap-1.5">
+              {hasDiscount && discountPercentage && (
                 <Badge className="bg-green-600 hover:bg-green-700 text-white border-transparent text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 md:py-1">
                   -{discountPercentage}%
                 </Badge>
-              </div>
-            )}
+              )}
+              {product.has_tiered_pricing && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Badge className="bg-blue-600 hover:bg-blue-700 text-white border-transparent text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 md:py-1 cursor-help">
+                        <TrendingDown className="h-3 w-3 mr-1" />
+                        Preço por Qtd
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="text-xs">Quanto mais você compra, menos paga!</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+            </div>
           </div>
 
           {/* Product Info */}
@@ -137,7 +172,22 @@ export function ProductCard({
             
             <div className="mt-auto">
               {/* Price Display */}
-              {hasDiscount ? (
+              {loadingTiers ? (
+                <div className="text-sm md:text-lg font-bold text-muted-foreground animate-pulse">
+                  Carregando preços...
+                </div>
+              ) : isTieredPricing ? (
+                <div className="space-y-0.5 md:space-y-1">
+                  {hasDiscount && originalPrice && (
+                    <div className="text-[10px] md:text-xs text-muted-foreground line-through">
+                      {formatCurrencyI18n(originalPrice, currency, language)}
+                    </div>
+                  )}
+                  <div className="text-sm md:text-lg font-bold text-primary">
+                    A partir de {formatCurrencyI18n(displayPrice!, currency, language)}
+                  </div>
+                </div>
+              ) : hasDiscount ? (
                 <div className="space-y-0.5 md:space-y-1">
                   <div className="text-[10px] md:text-xs text-muted-foreground line-through">
                     {formatCurrencyI18n(originalPrice!, currency, language)}

@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { toast } from 'sonner';
-import type { CartItem, CartState, Product } from '@/types';
+import type { CartItem, CartState, Product, PriceTier } from '@/types';
+import { fetchProductPriceTiers, calculateApplicablePrice } from '@/lib/tieredPricingUtils';
 
 interface CartContextType {
   cart: CartState;
@@ -17,6 +18,7 @@ interface CartContextType {
   updateItemNotes: (productId: string, notes: string) => void;
   updateVariantNotes: (variantId: string, notes: string) => void;
   updateVariantOptions: (variantId: string, color?: string, size?: string) => void;
+  recalculateTieredPrices: () => Promise<void>;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -29,6 +31,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     total: 0,
     itemCount: 0,
   });
+  const [tiersCache, setTiersCache] = useState<Map<string, PriceTier[]>>(new Map());
 
   // Load cart from localStorage on mount
   useEffect(() => {
@@ -55,20 +58,26 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   // Calculate totals whenever items change
   useEffect(() => {
-    const itemCount = cart.items.reduce((sum, item) => sum + item.quantity, 0);
-    const total = cart.items.reduce((sum, item) => {
-      const price = item.discounted_price || item.price;
-      return sum + (price * item.quantity);
-    }, 0);
+    const calculateTotals = async () => {
+      const itemCount = cart.items.reduce((sum, item) => sum + item.quantity, 0);
 
-    // Only update if values actually changed to prevent infinite loops
-    if (cart.total !== total || cart.itemCount !== itemCount) {
-      setCart(prev => ({
-        ...prev,
-        total,
-        itemCount,
-      }));
-    }
+      let total = 0;
+      for (const item of cart.items) {
+        const basePrice = item.discounted_price || item.price;
+        total += basePrice * item.quantity;
+      }
+
+      // Only update if values actually changed to prevent infinite loops
+      if (cart.total !== total || cart.itemCount !== itemCount) {
+        setCart(prev => ({
+          ...prev,
+          total,
+          itemCount,
+        }));
+      }
+    };
+
+    calculateTotals();
   }, [cart.items]);
 
   const generateVariantId = (productId: string, color?: string, size?: string) => {
@@ -274,6 +283,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
       }
     });
   };
+
+  const recalculateTieredPrices = async () => {
+    // This function recalculates prices for products with tiered pricing
+    // Currently, we use base prices in the cart and show tiered pricing info in the UI
+    // Future enhancement: dynamically update cart item prices based on quantity
+    console.log('Recalculating tiered prices...');
+  };
+
   const value = {
     cart,
     addToCart,
@@ -289,6 +306,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     updateItemNotes,
     updateVariantNotes,
     updateVariantOptions,
+    recalculateTieredPrices,
   };
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
