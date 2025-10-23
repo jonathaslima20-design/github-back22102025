@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { toast } from 'sonner';
-import { Upload, X, Loader2, Trash2, Star, Crop, ChevronDown } from 'lucide-react';
+import { Upload, X, Loader as Loader2, Trash2, Star, Crop, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { TagInput } from '@/components/ui/tag-input';
 import { CustomSizeInput } from '@/components/ui/custom-size-input';
