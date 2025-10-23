@@ -461,7 +461,7 @@ export function TieredPricingManager({
             </div>
           </div>
 
-          <Button onClick={handleAddTier} className="w-full md:w-auto">
+          <Button type="button" onClick={handleAddTier} className="w-full md:w-auto">
             <Plus className="h-4 w-4 mr-2" />
             Adicionar Faixa
           </Button>
