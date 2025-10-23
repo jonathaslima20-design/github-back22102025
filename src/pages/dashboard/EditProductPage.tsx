@@ -695,38 +695,28 @@ export default function EditProductPage() {
           toast.warning('A primeira faixa foi ajustada para começar na quantidade 1');
         }
 
-        const { error: deleteAllError } = await supabase
-          .from('product_price_tiers')
-          .delete()
-          .eq('product_id', id);
-
-        if (deleteAllError) {
-          console.error('Error deleting existing price tiers:', deleteAllError);
-          throw new Error(`Erro ao remover faixas de preço existentes: ${deleteAllError.message}`);
-        }
-
-        const tiersToInsert = sortedTiers.map(tier => ({
-          product_id: id,
+        const tiersToUpdate = sortedTiers.map(tier => ({
           min_quantity: tier.min_quantity,
           max_quantity: tier.max_quantity,
           unit_price: tier.unit_price,
           discounted_unit_price: tier.discounted_unit_price
         }));
 
-        console.log('Inserting price tiers:', tiersToInsert);
+        console.log('Updating price tiers via RPC:', tiersToUpdate);
 
-        const { data: insertedData, error: insertError } = await supabase
-          .from('product_price_tiers')
-          .insert(tiersToInsert)
-          .select();
+        const { data: updatedData, error: rpcError } = await supabase
+          .rpc('update_product_price_tiers', {
+            p_product_id: id,
+            p_tiers: tiersToUpdate
+          });
 
-        if (insertError) {
-          console.error('Error inserting price tiers:', insertError);
-          throw new Error(`Erro ao adicionar faixas de preço: ${insertError.message}`);
+        if (rpcError) {
+          console.error('Error updating price tiers:', rpcError);
+          throw new Error(`Erro ao atualizar faixas de preço: ${rpcError.message}`);
         }
 
-        console.log('Price tiers inserted successfully:', insertedData);
-        logCategoryOperation('PRICE_TIERS_UPDATED', { productId: id, insertedCount: insertedData?.length });
+        console.log('Price tiers updated successfully:', updatedData);
+        logCategoryOperation('PRICE_TIERS_UPDATED', { productId: id, updatedCount: updatedData?.length });
       } else {
         const { error: deleteTiersError } = await supabase
           .from('product_price_tiers')

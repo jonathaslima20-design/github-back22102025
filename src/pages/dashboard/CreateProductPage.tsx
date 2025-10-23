@@ -361,16 +361,17 @@ export default function CreateProductPage() {
         }
 
         const tiersToInsert = sortedTiers.map(tier => ({
-          product_id: product.id,
           min_quantity: tier.min_quantity,
           max_quantity: tier.max_quantity,
           unit_price: tier.unit_price,
           discounted_unit_price: tier.discounted_unit_price
         }));
 
-        const { error: tiersError } = await supabase
-          .from('product_price_tiers')
-          .insert(tiersToInsert);
+        const { data: insertedData, error: tiersError } = await supabase
+          .rpc('update_product_price_tiers', {
+            p_product_id: product.id,
+            p_tiers: tiersToInsert
+          });
 
         if (tiersError) {
           console.error('Error saving price tiers:', tiersError);
@@ -378,6 +379,7 @@ export default function CreateProductPage() {
           throw new Error(`Erro ao salvar faixas de preço: ${tiersError.message}`);
         }
 
+        console.log('Price tiers saved successfully:', insertedData);
         logCategoryOperation('PRICE_TIERS_SAVED', { productId: product.id });
       }
 
