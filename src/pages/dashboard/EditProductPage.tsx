@@ -673,53 +673,33 @@ export default function EditProductPage() {
       if (pricingMode === 'tiered') {
         logCategoryOperation('UPDATING_PRICE_TIERS', { productId: id });
 
-        const currentTierIds = new Set(priceTiers.map(t => t.id).filter(id => id !== undefined) as string[]);
-        const tiersToDelete = Array.from(originalTierIds).filter(id => !currentTierIds.has(id));
+        const { error: deleteAllError } = await supabase
+          .from('product_price_tiers')
+          .delete()
+          .eq('product_id', id);
 
-        if (tiersToDelete.length > 0) {
-          const { error: deleteError } = await supabase
-            .from('product_price_tiers')
-            .delete()
-            .in('id', tiersToDelete);
-
-          if (deleteError) {
-            console.error('Error deleting price tiers:', deleteError);
-            throw new Error(`Erro ao remover faixas de preço: ${deleteError.message}`);
-          }
+        if (deleteAllError) {
+          console.error('Error deleting existing price tiers:', deleteAllError);
+          throw new Error(`Erro ao remover faixas de preço existentes: ${deleteAllError.message}`);
         }
 
-        for (const tier of priceTiers) {
-          if (tier.id && originalTierIds.has(tier.id)) {
-            const { error: updateTierError } = await supabase
-              .from('product_price_tiers')
-              .update({
-                min_quantity: tier.min_quantity,
-                max_quantity: tier.max_quantity,
-                unit_price: tier.unit_price,
-                discounted_unit_price: tier.discounted_unit_price
-              })
-              .eq('id', tier.id);
+        const sortedTiers = [...priceTiers].sort((a, b) => a.min_quantity - b.min_quantity);
 
-            if (updateTierError) {
-              console.error('Error updating price tier:', updateTierError);
-              throw new Error(`Erro ao atualizar faixa de preço: ${updateTierError.message}`);
-            }
-          } else {
-            const { error: insertTierError } = await supabase
-              .from('product_price_tiers')
-              .insert({
-                product_id: id,
-                min_quantity: tier.min_quantity,
-                max_quantity: tier.max_quantity,
-                unit_price: tier.unit_price,
-                discounted_unit_price: tier.discounted_unit_price
-              });
+        const tiersToInsert = sortedTiers.map(tier => ({
+          product_id: id,
+          min_quantity: tier.min_quantity,
+          max_quantity: tier.max_quantity,
+          unit_price: tier.unit_price,
+          discounted_unit_price: tier.discounted_unit_price
+        }));
 
-            if (insertTierError) {
-              console.error('Error inserting price tier:', insertTierError);
-              throw new Error(`Erro ao adicionar faixa de preço: ${insertTierError.message}`);
-            }
-          }
+        const { error: insertError } = await supabase
+          .from('product_price_tiers')
+          .insert(tiersToInsert);
+
+        if (insertError) {
+          console.error('Error inserting price tiers:', insertError);
+          throw new Error(`Erro ao adicionar faixas de preço: ${insertError.message}`);
         }
 
         logCategoryOperation('PRICE_TIERS_UPDATED', { productId: id });

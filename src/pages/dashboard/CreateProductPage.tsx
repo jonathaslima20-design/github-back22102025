@@ -359,7 +359,9 @@ export default function CreateProductPage() {
       if (pricingMode === 'tiered' && priceTiers.length > 0) {
         logCategoryOperation('SAVING_PRICE_TIERS', { productId: product.id, tiersCount: priceTiers.length });
 
-        const tiersToInsert = priceTiers.map(tier => ({
+        const sortedTiers = [...priceTiers].sort((a, b) => a.min_quantity - b.min_quantity);
+
+        const tiersToInsert = sortedTiers.map(tier => ({
           product_id: product.id,
           min_quantity: tier.min_quantity,
           max_quantity: tier.max_quantity,
