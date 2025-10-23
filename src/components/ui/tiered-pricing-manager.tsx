@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/tooltip';
 import { Plus, Pencil, Trash2, AlertTriangle, Info, TrendingDown, Package } from 'lucide-react';
 import { getCurrencySymbol, type SupportedLanguage, type SupportedCurrency, getLocaleConfig } from '@/lib/i18n';
+import { toast } from 'sonner';
 
 export interface PriceTier {
   id?: string;
@@ -188,13 +189,20 @@ export function TieredPricingManager({
   }, [tiers]);
 
   const handleAddTier = useCallback(() => {
-    if (!newTier.min_quantity || !newTier.unit_price) {
+    if (!newTier.min_quantity) {
+      toast.error('A quantidade mínima é obrigatória');
+      return;
+    }
+
+    if (!newTier.unit_price || newTier.unit_price <= 0) {
+      toast.error('O preço unitário deve ser maior que zero');
       return;
     }
 
     let minQuantity = newTier.min_quantity;
     if (tiers.length === 0 && minQuantity !== 1) {
       minQuantity = 1;
+      toast.info('A primeira faixa foi ajustada para começar na quantidade 1');
     }
 
     const tierToAdd: PriceTier = {
@@ -204,7 +212,12 @@ export function TieredPricingManager({
       discounted_unit_price: newTier.discounted_unit_price ?? null
     };
 
-    onChange([...tiers, tierToAdd]);
+    const newTiers = [...tiers, tierToAdd];
+    console.log('Adding new tier:', tierToAdd);
+    console.log('Updated tiers array:', newTiers);
+
+    onChange(newTiers);
+    toast.success('Faixa de preço adicionada com sucesso!');
 
     setNewTier({
       min_quantity: (newTier.max_quantity ?? minQuantity) + 1,
@@ -216,7 +229,10 @@ export function TieredPricingManager({
 
   const handleDeleteTier = useCallback((index: number) => {
     const updatedTiers = tiers.filter((_, i) => i !== index);
+    console.log('Removing tier at index:', index);
+    console.log('Updated tiers after removal:', updatedTiers);
     onChange(updatedTiers);
+    toast.success('Faixa de preço removida com sucesso!');
     setDeleteConfirmIndex(null);
   }, [tiers, onChange]);
 
