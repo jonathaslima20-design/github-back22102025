@@ -257,14 +257,14 @@ export default function ProductDetailsPage() {
 
   const handleAddToCart = () => {
     if (!isAvailable || !hasPrice) return;
-    
-    // If product has options (colors/sizes), show variant modal
-    if (hasOptions) {
+
+    // If product has options (colors/sizes) OR tiered pricing, show variant modal
+    if (hasOptions || product.has_tiered_pricing) {
       setShowVariantModal(true);
       return;
     }
-    
-    // For products without options, add directly to cart
+
+    // For simple products without options or tiered pricing, add directly to cart
     addToCart(product);
   };
 

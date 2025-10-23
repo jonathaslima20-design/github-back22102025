@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { ShoppingCart, Plus, Minus, X } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ShoppingCart, Plus, Minus, X, TrendingDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
@@ -19,8 +19,13 @@ import {
 } from '@/components/ui/dialog';
 import { useCart } from '@/contexts/CartContext';
 import { formatCurrencyI18n, useTranslation, type SupportedLanguage, type SupportedCurrency } from '@/lib/i18n';
+import { toast } from 'sonner';
 import { getColorValue } from '@/lib/utils';
-import type { Product } from '@/types';
+import type { Product, PriceTier } from '@/types';
+import { fetchProductPriceTiers, calculateApplicablePrice, formatPriceTierRange } from '@/lib/tieredPricingUtils';
+import { supabase } from '@/lib/supabase';
+import TieredPricingIndicator from '@/components/product/TieredPricingIndicator';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface ProductVariantModalProps {
   open: boolean;
@@ -40,8 +45,40 @@ export default function ProductVariantModal({
   const [selectedColor, setSelectedColor] = useState<string | undefined>();
   const [selectedSize, setSelectedSize] = useState<string | undefined>();
   const [quantity, setQuantity] = useState(1);
+  const [priceTiers, setPriceTiers] = useState<PriceTier[]>([]);
+  const [hasTieredPricing, setHasTieredPricing] = useState(false);
+  const [loadingTiers, setLoadingTiers] = useState(false);
   const { addToCart, hasVariant, getVariantQuantity } = useCart();
   const { t } = useTranslation(language);
+
+  useEffect(() => {
+    const loadTieredPricing = async () => {
+      if (!product.id) return;
+
+      setLoadingTiers(true);
+      try {
+        const { data: productData } = await supabase
+          .from('products')
+          .select('has_tiered_pricing')
+          .eq('id', product.id)
+          .single();
+
+        if (productData?.has_tiered_pricing) {
+          const tiers = await fetchProductPriceTiers(product.id);
+          setPriceTiers(tiers);
+          setHasTieredPricing(true);
+        }
+      } catch (error) {
+        console.error('Error loading tiered pricing:', error);
+      } finally {
+        setLoadingTiers(false);
+      }
+    };
+
+    if (open) {
+      loadTieredPricing();
+    }
+  }, [product.id, open]);
 
   // More robust checking for colors and sizes
   const hasColors = Boolean(
@@ -108,34 +145,24 @@ export default function ProductVariantModal({
   const inCart = hasVariant(product.id, selectedColor, selectedSize);
 
   const handleAddToCart = () => {
-    // For products without options, allow direct add to cart
-    if (!hasOptions) {
-      for (let i = 0; i < quantity; i++) {
-        addToCart(product, selectedColor, selectedSize);
-      }
-      
-      // Reset form and close modal
-      setSelectedColor(undefined);
-      setSelectedSize(undefined);
-      setQuantity(1);
-      onOpenChange(false);
-      return;
-    }
-    
     // Validate required selections for products with options
-    if (hasColors && !selectedColor) {
-      toast.error('Selecione uma cor');
-      return;
-    }
-    if (hasSizes && !selectedSize) {
-      toast.error('Selecione um tamanho');
-      return;
+    if (hasOptions) {
+      if (hasColors && !selectedColor) {
+        toast.error('Selecione uma cor');
+        return;
+      }
+      if (hasSizes && !selectedSize) {
+        toast.error('Selecione um tamanho');
+        return;
+      }
     }
 
     // Add the specified quantity
     for (let i = 0; i < quantity; i++) {
       addToCart(product, selectedColor, selectedSize);
     }
+
+    toast.success(`${quantity} ${quantity === 1 ? 'item adicionado' : 'itens adicionados'} ao carrinho`);
 
     // Reset form and close modal
     setSelectedColor(undefined);
@@ -149,9 +176,22 @@ export default function ProductVariantModal({
   // For products without options, always allow add to cart
   const canAddToCartFinal = !hasOptions || canAddToCart;
 
-  // Calculate price
-  const price = product.discounted_price || product.price;
-  const totalPrice = price * quantity;
+  // Calculate price with tiered pricing if applicable
+  let price = product.discounted_price || product.price;
+  let totalPrice = price * quantity;
+  let pricingInfo = null;
+
+  if (hasTieredPricing && priceTiers.length > 0) {
+    const result = calculateApplicablePrice(
+      quantity,
+      priceTiers,
+      product.price,
+      product.discounted_price
+    );
+    price = result.unitPrice;
+    totalPrice = result.totalPrice;
+    pricingInfo = result;
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -296,7 +336,15 @@ export default function ProductVariantModal({
 
           {/* Quantity Selection */}
           <div className="space-y-3">
-            <Label className="text-sm font-medium">Quantidade</Label>
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium">Quantidade</Label>
+              {hasTieredPricing && (
+                <Badge className="bg-blue-600 text-white text-xs">
+                  <TrendingDown className="h-3 w-3 mr-1" />
+                  Preço Escalonado
+                </Badge>
+              )}
+            </div>
             <div className="flex items-center gap-3">
               <Button
                 size="sm"
@@ -318,6 +366,63 @@ export default function ProductVariantModal({
               </Button>
             </div>
           </div>
+
+          {/* Tiered Pricing Info */}
+          {hasTieredPricing && pricingInfo && (
+            <TieredPricingIndicator
+              currentQuantity={quantity}
+              nextTierQuantity={pricingInfo.nextTier?.min_quantity || 0}
+              nextTierSavings={pricingInfo.nextTierSavings}
+              appliedTierSavings={pricingInfo.savings}
+              currency={currency}
+              language={language}
+            />
+          )}
+
+          {/* Quick Tier Selector */}
+          {hasTieredPricing && priceTiers.length > 0 && (
+            <Card className="border-blue-200 dark:border-blue-800">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <TrendingDown className="h-4 w-4 text-blue-600" />
+                  Seleção Rápida de Quantidade
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  Clique para selecionar uma quantidade e ver o preço
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-2">
+                  {priceTiers.slice(0, 4).map((tier) => {
+                    const tierPrice = tier.discounted_unit_price || tier.unit_price;
+                    const tierTotal = tierPrice * tier.min_quantity;
+                    const basePrice = product.discounted_price || product.price;
+                    const savings = (basePrice * tier.min_quantity) - tierTotal;
+                    const savingsPercent = Math.round((savings / (basePrice * tier.min_quantity)) * 100);
+
+                    return (
+                      <Button
+                        key={tier.id}
+                        variant={quantity === tier.min_quantity ? "default" : "outline"}
+                        className="h-auto py-2 px-3 flex flex-col items-start"
+                        onClick={() => setQuantity(tier.min_quantity)}
+                      >
+                        <div className="text-xs font-semibold">{formatPriceTierRange(tier)}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {formatCurrencyI18n(tierPrice, currency, language)}/un
+                        </div>
+                        {savingsPercent > 0 && (
+                          <div className="text-xs text-green-600 font-medium">
+                            -{savingsPercent}%
+                          </div>
+                        )}
+                      </Button>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Validation message */}
           {hasOptions && ((!selectedColor && hasColors) || (!selectedSize && hasSizes)) && (
