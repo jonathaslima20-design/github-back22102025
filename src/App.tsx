@@ -18,34 +18,34 @@ import DashboardLayout from '@/components/layouts/DashboardLayout';
 import AdminLayout from '@/components/layouts/AdminLayout';
 
 // Public Pages
-import LoginPage from '@/pages/LoginPage';
-import RegisterPage from '@/pages/RegisterPage';
-import CorretorPage from '@/pages/CorretorPage';
-import ProductDetailsPage from '@/pages/ProductDetailsPage';
-import HelpCenterPage from '@/pages/HelpCenterPage';
-import HelpCategoryPage from '@/pages/HelpCategoryPage';
-import HelpArticlePage from '@/pages/HelpArticlePage';
+import LoginPage from '@/pages/LoginPage.tsx';
+import RegisterPage from '@/pages/RegisterPage.tsx';
+import CorretorPage from '@/pages/CorretorPage.tsx';
+import ProductDetailsPage from '@/pages/ProductDetailsPage.tsx';
+import HelpCenterPage from '@/pages/HelpCenterPage.tsx';
+import HelpCategoryPage from '@/pages/HelpCategoryPage.tsx';
+import HelpArticlePage from '@/pages/HelpArticlePage.tsx';
 
 // Dashboard Pages
-import DashboardPage from '@/pages/dashboard/DashboardPage';
-import SettingsPage from '@/pages/dashboard/SettingsPage';
-import ListingsPage from '@/pages/dashboard/ListingsPage';
-import CreateProductPage from '@/pages/dashboard/CreateProductPage';
-import EditProductPage from '@/pages/dashboard/EditProductPage';
-import TrackingSettingsPage from '@/pages/dashboard/TrackingSettingsPage';
-import CategoriesPage from '@/pages/dashboard/CategoriesPage';
-import ReferralPage from '@/pages/dashboard/ReferralPage';
+import DashboardPage from '@/pages/dashboard/DashboardPage.tsx';
+import SettingsPage from '@/pages/dashboard/SettingsPage.tsx';
+import ListingsPage from '@/pages/dashboard/ListingsPage.tsx';
+import CreateProductPage from '@/pages/dashboard/CreateProductPage.tsx';
+import EditProductPage from '@/pages/dashboard/EditProductPage.tsx';
+import TrackingSettingsPage from '@/pages/dashboard/TrackingSettingsPage.tsx';
+import CategoriesPage from '@/pages/dashboard/CategoriesPage.tsx';
+import ReferralPage from '@/pages/dashboard/ReferralPage.tsx';
 
 // Admin Pages
-import AdminDashboardPage from '@/pages/admin/AdminDashboardPage';
-import FinancialPage from '@/pages/admin/FinancialPage';
-import UsersManagementPage from '@/pages/admin/UsersManagementPage';
-import UserDetailPage from '@/pages/admin/UserDetailPage';
-import CreateUserPage from '@/pages/admin/CreateUserPage';
-import AdminSettingsPage from '@/pages/admin/SettingsPage';
-import SubscriptionPlansPage from '@/pages/admin/SubscriptionPlansPage';
-import ReferralManagementPage from '@/pages/admin/ReferralManagementPage';
-import HelpManagementPage from '@/pages/admin/HelpManagementPage';
+import AdminDashboardPage from '@/pages/admin/AdminDashboardPage.tsx';
+import FinancialPage from '@/pages/admin/FinancialPage.tsx';
+import UsersManagementPage from '@/pages/admin/UsersManagementPage.tsx';
+import UserDetailPage from '@/pages/admin/UserDetailPage.tsx';
+import CreateUserPage from '@/pages/admin/CreateUserPage.tsx';
+import AdminSettingsPage from '@/pages/admin/SettingsPage.tsx';
+import SubscriptionPlansPage from '@/pages/admin/SubscriptionPlansPage.tsx';
+import ReferralManagementPage from '@/pages/admin/ReferralManagementPage.tsx';
+import HelpManagementPage from '@/pages/admin/HelpManagementPage.tsx';
 
 // Route Guards
 import ProtectedRoute from '@/components/ProtectedRoute';
