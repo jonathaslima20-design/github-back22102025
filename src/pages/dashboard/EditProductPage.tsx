@@ -125,7 +125,7 @@ export default function EditProductPage() {
           title: product.title,
           description: product.description,
           short_description: product.short_description || '',
-          price: product.price,
+          price: product.price || 0,
           is_starting_price: product.is_starting_price || false,
           featured_offer_price: product.featured_offer_price || undefined,
           featured_offer_installment: product.featured_offer_installment || undefined,
