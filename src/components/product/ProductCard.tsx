@@ -56,7 +56,7 @@ export function ProductCard({
   const isTieredPricing = product.has_tiered_pricing && effectiveMinPrice !== null && effectiveMinPrice > 0;
 
   const isAvailable = product.status === 'disponivel';
-  const hasPrice = (displayPrice && displayPrice > 0) || (product.has_tiered_pricing && !loadingTiers);
+  const hasPrice = (displayPrice && displayPrice > 0) || (product.has_tiered_pricing && minimumTieredPrice && minimumTieredPrice > 0);
   
   // More robust checking for colors and sizes with debug logging
   const hasColors = product.colors && 
@@ -172,11 +172,11 @@ export function ProductCard({
             
             <div className="mt-auto">
               {/* Price Display */}
-              {loadingTiers ? (
+              {loadingTiers && product.has_tiered_pricing ? (
                 <div className="text-sm md:text-lg font-bold text-muted-foreground animate-pulse">
                   Carregando preços...
                 </div>
-              ) : product.has_tiered_pricing && minimumTieredPrice && minimumTieredPrice > 0 ? (
+              ) : isTieredPricing ? (
                 <div className="space-y-0.5 md:space-y-1">
                   {hasDiscount && originalPrice && originalPrice > 0 && (
                     <div className="text-[10px] md:text-xs text-muted-foreground line-through">
@@ -184,7 +184,7 @@ export function ProductCard({
                     </div>
                   )}
                   <div className="text-sm md:text-lg font-bold text-primary">
-                    a partir de {formatCurrencyI18n(minimumTieredPrice, currency, language)}
+                    a partir de {formatCurrencyI18n(minimumTieredPrice!, currency, language)}
                   </div>
                 </div>
               ) : hasDiscount && displayPrice && displayPrice > 0 ? (

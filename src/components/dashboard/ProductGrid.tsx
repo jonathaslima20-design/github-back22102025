@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
-import { Loader2, GripVertical, ArrowUpDown, CheckSquare, Square, Move } from 'lucide-react';
+import { Loader2, GripVertical, ArrowUpDown, CheckSquare, Square, Move, TrendingDown } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -8,6 +8,9 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/lib/utils';
 import type { Product } from '@/types';
+import { useState, useEffect } from 'react';
+import { fetchProductPriceTiers, getMinimumPriceFromTiers } from '@/lib/tieredPricingUtils';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 import { EnhancedProductGrid } from './EnhancedProductGrid';
 
@@ -66,20 +69,38 @@ export function ProductGrid({
     );
   }
 
-  const ProductCard = ({ product, index, isDragMode }: { 
-    product: Product; 
-    index: number; 
+  const ProductCard = ({ product, index, isDragMode }: {
+    product: Product;
+    index: number;
     isDragMode: boolean;
   }) => {
     const isSelected = selectedProducts.has(product.id);
-    
+    const [minimumTieredPrice, setMinimumTieredPrice] = useState<number | null>(null);
+    const [loadingTiers, setLoadingTiers] = useState(false);
+
+    useEffect(() => {
+      if (product.has_tiered_pricing) {
+        setLoadingTiers(true);
+        fetchProductPriceTiers(product.id)
+          .then(tiers => {
+            const minPrice = getMinimumPriceFromTiers(tiers);
+            setMinimumTieredPrice(minPrice);
+          })
+          .catch(err => console.error('Error loading price tiers:', err))
+          .finally(() => setLoadingTiers(false));
+      }
+    }, [product.id, product.has_tiered_pricing]);
+
     // Calculate discount information
+    const effectiveMinPrice = product.has_tiered_pricing && minimumTieredPrice && minimumTieredPrice > 0 ? minimumTieredPrice : null;
     const hasDiscount = product.discounted_price && product.discounted_price < product.price;
-    const displayPrice = hasDiscount ? product.discounted_price : product.price;
+    const baseDisplayPrice = hasDiscount ? product.discounted_price : product.price;
+    const displayPrice = effectiveMinPrice !== null ? effectiveMinPrice : baseDisplayPrice;
     const originalPrice = hasDiscount ? product.price : null;
-    const discountPercentage = hasDiscount 
+    const discountPercentage = hasDiscount
       ? Math.round(((product.price - product.discounted_price!) / product.price) * 100)
       : null;
+    const isTieredPricing = product.has_tiered_pricing && effectiveMinPrice !== null && effectiveMinPrice > 0;
 
     return (
       <Card className={`h-full hover:shadow-lg transition-all duration-200 group ${isDragMode ? 'cursor-grab active:cursor-grabbing' : ''} ${isSelected ? 'ring-2 ring-primary' : ''}`}>
@@ -119,21 +140,30 @@ export function ProductGrid({
                 )}
               </div>
               
-              {/* Discount Badge - Top Right - VERDE */}
-              {hasDiscount && discountPercentage && (
-                <div className="absolute top-1 right-1">
+              {/* Badges - Top Right */}
+              <div className="absolute top-1 right-1 flex flex-col gap-1">
+                {hasDiscount && discountPercentage && (
                   <Badge className="bg-green-600 hover:bg-green-700 text-white border-transparent text-xs px-1 py-0">
                     -{discountPercentage}%
                   </Badge>
-                </div>
-              )}
-
-              {/* Status Badge - Only for sold/reserved */}
-              {getStatusBadge(product.status) && (
-                <div className="absolute top-1 right-1" style={{ marginTop: hasDiscount && discountPercentage ? '24px' : '0' }}>
-                  {getStatusBadge(product.status)}
-                </div>
-              )}
+                )}
+                {product.has_tiered_pricing && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge className="bg-blue-600 hover:bg-blue-700 text-white border-transparent text-[10px] px-1 py-0 cursor-help">
+                          <TrendingDown className="h-2.5 w-2.5 mr-0.5" />
+                          Preço/Qtd
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-xs">Quanto mais você compra, menos paga!</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+                {getStatusBadge(product.status)}
+              </div>
 
               {/* Visibility Indicator */}
               <div className="absolute top-1 left-1">
@@ -155,7 +185,22 @@ export function ProductGrid({
 
             {/* Price Display with Discount Support */}
             <div className="mb-2 md:mb-3">
-              {hasDiscount ? (
+              {loadingTiers && product.has_tiered_pricing ? (
+                <div className="text-xs md:text-sm font-bold text-muted-foreground animate-pulse">
+                  Carregando preços...
+                </div>
+              ) : isTieredPricing ? (
+                <div className="space-y-0.5 md:space-y-1">
+                  {hasDiscount && originalPrice && originalPrice > 0 && (
+                    <div className="text-[10px] md:text-xs text-muted-foreground line-through">
+                      {formatCurrency(originalPrice, user?.currency || 'BRL', user?.language || 'pt-BR')}
+                    </div>
+                  )}
+                  <div className="text-xs md:text-sm font-bold text-primary">
+                    a partir de {formatCurrency(minimumTieredPrice!, user?.currency || 'BRL', user?.language || 'pt-BR')}
+                  </div>
+                </div>
+              ) : hasDiscount ? (
                 <div className="space-y-0.5 md:space-y-1">
                   {/* Original price with strikethrough */}
                   <div className="text-[10px] md:text-xs text-muted-foreground line-through">
@@ -168,12 +213,12 @@ export function ProductGrid({
                     {formatCurrency(displayPrice!, user?.currency || 'BRL', user?.language || 'pt-BR')}
                   </div>
                 </div>
-              ) : (
+              ) : displayPrice && displayPrice > 0 ? (
                 <div className="text-xs md:text-sm font-bold text-primary">
                   {product.is_starting_price ? 'A partir de ' : ''}
                   {formatCurrency(displayPrice!, user?.currency || 'BRL', user?.language || 'pt-BR')}
                 </div>
-              )}
+              ) : null}
 
               {/* Short Description (Promotional phrase) */}
               {product.short_description && (

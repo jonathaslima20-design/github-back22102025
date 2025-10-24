@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GripVertical, Target, ArrowDown } from 'lucide-react';
+import { GripVertical, Target, ArrowDown, TrendingDown } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/lib/utils';
@@ -9,6 +9,8 @@ import { DragDropIndicator, DragDropZone } from './DragDropIndicator';
 import { ReorderModeControls } from './ReorderModeControls';
 import { useDragDropState } from '@/hooks/useDragDropState';
 import type { Product } from '@/types';
+import { fetchProductPriceTiers, getMinimumPriceFromTiers } from '@/lib/tieredPricingUtils';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface EnhancedProductGridProps {
   products: Product[];
@@ -98,16 +100,36 @@ export function EnhancedProductGrid({
     setLocalProducts(originalProducts);
   };
 
-  const ProductCard = ({ product, index, isDragging }: { 
-    product: Product; 
-    index: number; 
+  const ProductCard = ({ product, index, isDragging }: {
+    product: Product;
+    index: number;
     isDragging: boolean;
   }) => {
+    const [minimumTieredPrice, setMinimumTieredPrice] = useState<number | null>(null);
+    const [loadingTiers, setLoadingTiers] = useState(false);
+
+    useEffect(() => {
+      if (product.has_tiered_pricing) {
+        setLoadingTiers(true);
+        fetchProductPriceTiers(product.id)
+          .then(tiers => {
+            const minPrice = getMinimumPriceFromTiers(tiers);
+            setMinimumTieredPrice(minPrice);
+          })
+          .catch(err => console.error('Error loading price tiers:', err))
+          .finally(() => setLoadingTiers(false));
+      }
+    }, [product.id, product.has_tiered_pricing]);
+
+    const effectiveMinPrice = product.has_tiered_pricing && minimumTieredPrice && minimumTieredPrice > 0 ? minimumTieredPrice : null;
     const hasDiscount = product.discounted_price && product.discounted_price < product.price;
-    const displayPrice = hasDiscount ? product.discounted_price : product.price;
-    const discountPercentage = hasDiscount 
+    const baseDisplayPrice = hasDiscount ? product.discounted_price : product.price;
+    const displayPrice = effectiveMinPrice !== null ? effectiveMinPrice : baseDisplayPrice;
+    const originalPrice = hasDiscount ? product.price : null;
+    const discountPercentage = hasDiscount
       ? Math.round(((product.price - product.discounted_price!) / product.price) * 100)
       : null;
+    const isTieredPricing = product.has_tiered_pricing && effectiveMinPrice !== null && effectiveMinPrice > 0;
 
     return (
       <motion.div
@@ -157,14 +179,29 @@ export function EnhancedProductGrid({
                 )}
               </div>
 
-              {/* Discount Badge */}
-              {hasDiscount && discountPercentage && (
-                <div className="absolute top-1 right-1">
+              {/* Badges */}
+              <div className="absolute top-1 right-1 flex flex-col gap-1">
+                {hasDiscount && discountPercentage && (
                   <Badge className="bg-green-600 hover:bg-green-700 text-white border-transparent text-xs px-1 py-0">
                     -{discountPercentage}%
                   </Badge>
-                </div>
-              )}
+                )}
+                {product.has_tiered_pricing && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge className="bg-blue-600 hover:bg-blue-700 text-white border-transparent text-[10px] px-1 py-0 cursor-help">
+                          <TrendingDown className="h-2.5 w-2.5 mr-0.5" />
+                          Preço/Qtd
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-xs">Quanto mais você compra, menos paga!</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+              </div>
             </div>
 
             {/* Product Info */}
@@ -172,9 +209,29 @@ export function EnhancedProductGrid({
               {product.title}
             </h2>
 
-            <div className="text-xs md:text-sm font-bold text-primary">
-              {product.is_starting_price ? 'A partir de ' : ''}
-              {formatCurrency(displayPrice!, user?.currency || 'BRL', user?.language || 'pt-BR')}
+            {/* Price Display */}
+            <div>
+              {loadingTiers && product.has_tiered_pricing ? (
+                <div className="text-xs md:text-sm font-bold text-muted-foreground animate-pulse">
+                  Carregando...
+                </div>
+              ) : isTieredPricing ? (
+                <div className="space-y-0.5">
+                  {hasDiscount && originalPrice && originalPrice > 0 && (
+                    <div className="text-[10px] md:text-xs text-muted-foreground line-through">
+                      {formatCurrency(originalPrice, user?.currency || 'BRL', user?.language || 'pt-BR')}
+                    </div>
+                  )}
+                  <div className="text-xs md:text-sm font-bold text-primary">
+                    a partir de {formatCurrency(minimumTieredPrice!, user?.currency || 'BRL', user?.language || 'pt-BR')}
+                  </div>
+                </div>
+              ) : displayPrice && displayPrice > 0 ? (
+                <div className="text-xs md:text-sm font-bold text-primary">
+                  {product.is_starting_price ? 'A partir de ' : ''}
+                  {formatCurrency(displayPrice!, user?.currency || 'BRL', user?.language || 'pt-BR')}
+                </div>
+              ) : null}
             </div>
 
             {/* Dragging Overlay */}
