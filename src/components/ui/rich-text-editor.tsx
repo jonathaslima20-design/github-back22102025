@@ -10,17 +10,17 @@ import {
   Heading2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 
 interface RichTextEditorProps {
-  value: string;
+  content?: string;
   onChange: (value: string) => void;
   placeholder?: string;
   className?: string;
 }
 
 export function RichTextEditor({
-  value,
+  content,
   onChange,
   placeholder,
   className,
@@ -39,7 +39,7 @@ export function RichTextEditor({
       }),
       Underline,
     ],
-    content: value,
+    content: content || '',
     editorProps: {
       attributes: {
         class: cn(
@@ -53,6 +53,12 @@ export function RichTextEditor({
       handleChange(editor.getHTML());
     },
   });
+
+  useEffect(() => {
+    if (editor && content !== undefined && content !== editor.getHTML()) {
+      editor.commands.setContent(content || '', false);
+    }
+  }, [editor, content]);
 
   if (!editor) {
     return null;
