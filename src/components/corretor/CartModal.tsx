@@ -179,13 +179,15 @@ export default function CartModal({
             <div className="flex-1 overflow-y-auto space-y-3 max-h-[400px]">
               {cart.items.map((item) => {
                 const tierInfo = productTiers.get(item.id);
-                const hasTieredPricing = tierInfo?.hasTieredPricing || false;
+                const hasTieredPricing = item.has_tiered_pricing || tierInfo?.hasTieredPricing || false;
                 const tiers = tierInfo?.tiers || [];
 
-                let price = item.discounted_price || item.price;
+                // Use the stored applied tier price if available
+                let price = item.applied_tier_price || item.discounted_price || item.price;
                 let itemTotal = price * item.quantity;
                 let pricingInfo = null;
 
+                // Recalculate if tiered pricing is enabled and we have tiers
                 if (hasTieredPricing && tiers.length > 0) {
                   const result = calculateApplicablePrice(
                     item.quantity,
@@ -196,8 +198,6 @@ export default function CartModal({
                   price = result.unitPrice;
                   itemTotal = result.totalPrice;
                   pricingInfo = result;
-                } else {
-                  itemTotal = price * item.quantity;
                 }
 
                 return (

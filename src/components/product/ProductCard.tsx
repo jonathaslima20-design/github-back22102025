@@ -89,24 +89,24 @@ export function ProductCard({
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
-    // If product has options (colors/sizes), show variant modal
-    if (isAvailable && hasPrice && hasOptions) {
+
+    // If product has options (colors/sizes) OR tiered pricing, show variant modal
+    if (isAvailable && hasPrice && (hasOptions || product.has_tiered_pricing)) {
       setShowVariantModal(true);
       return;
     }
-    
-    // For products without options, add directly to cart
-    if (isAvailable && hasPrice && !hasOptions) {
+
+    // For simple products without options or tiered pricing, add directly to cart
+    if (isAvailable && hasPrice && !hasOptions && !product.has_tiered_pricing) {
       addToCart(product);
       return;
     }
-    
+
     // Don't do anything for products without price or not available
     if (!hasPrice) {
       return;
     }
-    
+
     if (!isAvailable) {
       return;
     }
@@ -176,7 +176,7 @@ export function ProductCard({
                 <div className="text-sm md:text-lg font-bold text-muted-foreground animate-pulse">
                   Carregando preços...
                 </div>
-              ) : isTieredPricing ? (
+              ) : product.has_tiered_pricing && minimumTieredPrice ? (
                 <div className="space-y-0.5 md:space-y-1">
                   {hasDiscount && originalPrice && (
                     <div className="text-[10px] md:text-xs text-muted-foreground line-through">
@@ -184,7 +184,7 @@ export function ProductCard({
                     </div>
                   )}
                   <div className="text-sm md:text-lg font-bold text-primary">
-                    A partir de {formatCurrencyI18n(displayPrice!, currency, language)}
+                    A partir de {formatCurrencyI18n(minimumTieredPrice, currency, language)}
                   </div>
                 </div>
               ) : hasDiscount ? (

@@ -285,11 +285,46 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   const recalculateTieredPrices = async () => {
-    // This function recalculates prices for products with tiered pricing
-    // Currently, we use base prices in the cart and show tiered pricing info in the UI
-    // Future enhancement: dynamically update cart item prices based on quantity
-    console.log('Recalculating tiered prices...');
+    // Recalculate prices for products with tiered pricing
+    const updatedItems = await Promise.all(
+      cart.items.map(async (item) => {
+        if (!item.has_tiered_pricing) return item;
+
+        try {
+          const tiers = await fetchProductPriceTiers(item.id);
+          if (tiers.length === 0) return item;
+
+          const result = calculateApplicablePrice(
+            item.quantity,
+            tiers,
+            item.price,
+            item.discounted_price
+          );
+
+          return {
+            ...item,
+            applied_tier_price: result.unitPrice,
+          };
+        } catch (error) {
+          console.error('Error recalculating tiered price:', error);
+          return item;
+        }
+      })
+    );
+
+    setCart(prev => ({
+      ...prev,
+      items: updatedItems,
+    }));
   };
+
+  // Recalculate tiered prices whenever quantities change
+  useEffect(() => {
+    const hasTieredProducts = cart.items.some(item => item.has_tiered_pricing);
+    if (hasTieredProducts) {
+      recalculateTieredPrices();
+    }
+  }, [cart.items.map(item => `${item.id}-${item.quantity}`).join(',')]);
 
   const value = {
     cart,

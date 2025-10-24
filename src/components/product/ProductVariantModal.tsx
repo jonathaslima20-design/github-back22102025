@@ -157,10 +157,11 @@ export default function ProductVariantModal({
       }
     }
 
-    // Add the specified quantity
-    for (let i = 0; i < quantity; i++) {
-      addToCart(product, selectedColor, selectedSize);
-    }
+    // Calculate the unit price (with tiered pricing if applicable)
+    const unitPrice = hasTieredPricing && pricingInfo ? pricingInfo.unitPrice : undefined;
+
+    // Add the specified quantity with tiered price
+    addToCart(product, selectedColor, selectedSize, quantity, unitPrice);
 
     toast.success(`${quantity} ${quantity === 1 ? 'item adicionado' : 'itens adicionados'} ao carrinho`);
 
