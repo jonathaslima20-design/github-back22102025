@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { ListingsHeader } from '@/components/dashboard/ListingsHeader';
@@ -11,25 +12,40 @@ import { useProductListManagement } from '@/hooks/useProductListManagement';
 
 export default function ListingsPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  
   const {
     products,
     filteredProducts,
     loading,
     searchQuery,
     setSearchQuery,
-    selectedCategory,
-    setSelectedCategory,
-    sortOrder,
-    setSortOrder,
+    statusFilter,
+    setStatusFilter,
+    categoryFilter,
+    setCategoryFilter,
+    availableCategories,
+    updatingProductId,
+    reordering,
+    isReorderModeActive,
+    setIsReorderModeActive,
     selectedProducts,
     setSelectedProducts,
-    reorderMode,
-    setReorderMode,
-    handleReorder,
-    handleBulkDelete,
+    bulkActionLoading,
+    canReorder,
+    allSelected,
+    someSelected,
+    toggleProductVisibility,
+    handleSelectProduct,
+    handleSelectAll,
     handleBulkVisibilityToggle,
+    handleBulkCategoryChange,
+    handleBulkBrandChange,
+    handleBulkDelete,
+    handleBulkImageCompression,
+    handleDragEnd,
     refreshProducts
-  } = useProductListManagement();
+  } = useProductListManagement({ userId: user?.id });
 
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
@@ -39,17 +55,19 @@ export default function ListingsPage() {
         onCreateNew={() => navigate('/dashboard/products/new')}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
-        reorderMode={reorderMode}
-        onReorderModeToggle={() => setReorderMode(!reorderMode)}
+        reorderMode={isReorderModeActive}
+        onReorderModeToggle={() => setIsReorderModeActive(!isReorderModeActive)}
+        canReorder={canReorder}
       />
 
       <ListingsFilters
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
-        selectedCategory={selectedCategory}
-        onCategoryChange={setSelectedCategory}
-        sortOrder={sortOrder}
-        onSortOrderChange={setSortOrder}
+        statusFilter={statusFilter}
+        onStatusFilterChange={setStatusFilter}
+        categoryFilter={categoryFilter}
+        onCategoryFilterChange={setCategoryFilter}
+        availableCategories={availableCategories}
       />
 
       <ListingsStatusBar
@@ -61,9 +79,13 @@ export default function ListingsPage() {
       {selectedProducts.length > 0 && (
         <BulkActionsPanel
           selectedCount={selectedProducts.length}
+          onBulkVisibilityToggle={handleBulkVisibilityToggle}
+          onBulkCategoryChange={handleBulkCategoryChange}
+          onBulkBrandChange={handleBulkBrandChange}
           onDelete={handleBulkDelete}
-          onVisibilityToggle={handleBulkVisibilityToggle}
+          onBulkImageCompression={handleBulkImageCompression}
           onClearSelection={() => setSelectedProducts([])}
+          loading={bulkActionLoading}
         />
       )}
 
@@ -71,11 +93,18 @@ export default function ListingsPage() {
         products={filteredProducts}
         loading={loading}
         viewMode={viewMode}
-        reorderMode={reorderMode}
+        reorderMode={isReorderModeActive}
         selectedProducts={selectedProducts}
-        onSelectionChange={setSelectedProducts}
-        onReorder={handleReorder}
+        onSelectionChange={handleSelectProduct}
+        onSelectAll={handleSelectAll}
+        onReorder={handleDragEnd}
+        onToggleVisibility={toggleProductVisibility}
         onRefresh={refreshProducts}
+        updatingProductId={updatingProductId}
+        reordering={reordering}
+        canReorder={canReorder}
+        allSelected={allSelected}
+        someSelected={someSelected}
       />
 
       {!loading && filteredProducts.length === 0 && (

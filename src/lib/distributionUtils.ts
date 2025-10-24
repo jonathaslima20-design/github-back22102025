@@ -176,17 +176,34 @@ export async function fetchUserDistributions(): Promise<VariantDistribution[]> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return [];
 
-    const { data: distributions, error } = await supabase
+    // First fetch distributions
+    const { data: distributions, error: distError } = await supabase
       .from('cart_variant_distributions')
-      .select(`
-        *,
-        items:cart_distribution_items(*)
-      `)
+      .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
-    return distributions || [];
+    if (distError) throw distError;
+    if (!distributions) return [];
+
+    // Then fetch items for each distribution separately
+    const distributionsWithItems = await Promise.all(
+      distributions.map(async (dist) => {
+        const { data: items, error: itemsError } = await supabase
+          .from('cart_distribution_items')
+          .select('*')
+          .eq('distribution_id', dist.id);
+
+        if (itemsError) {
+          console.error('Error fetching distribution items:', itemsError);
+          return { ...dist, items: [] };
+        }
+
+        return { ...dist, items: items || [] };
+      })
+    );
+
+    return distributionsWithItems;
   } catch (error) {
     console.error('Error fetching distributions:', error);
     return [];
