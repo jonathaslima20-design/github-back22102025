@@ -382,10 +382,15 @@ export default function EditProductPage() {
       </div>
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit, (errors) => {
-          console.error('Form validation errors:', errors);
-          toast.error('Por favor, corrija os erros no formulário');
-        })} className="space-y-6">
+        <form onSubmit={(e) => {
+          console.log('Form submit event triggered');
+          console.log('Current form values:', form.getValues());
+          console.log('Form errors:', form.formState.errors);
+          form.handleSubmit(onSubmit, (errors) => {
+            console.error('Form validation errors:', errors);
+            toast.error('Por favor, corrija os erros no formulário');
+          })(e);
+        }} className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>Informações Básicas</CardTitle>
@@ -738,7 +743,13 @@ export default function EditProductPage() {
           </Card>
 
           <div className="flex gap-2">
-            <Button type="submit" disabled={loading}>
+            <Button
+              type="submit"
+              disabled={loading}
+              onClick={(e) => {
+                console.log('Button clicked', { loading, formValid: form.formState.isValid });
+              }}
+            >
               {loading ? 'Salvando...' : 'Salvar Alterações'}
             </Button>
             <Button type="button" variant="outline" onClick={() => navigate(-1)}>
