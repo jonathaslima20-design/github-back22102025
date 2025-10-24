@@ -48,7 +48,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const savedCart = localStorage.getItem(STORAGE_KEY);
       if (savedCart) {
         const parsedCart = JSON.parse(savedCart);
-        setCart(parsedCart);
+        // Ensure cart has required fields with defaults
+        setCart({
+          items: parsedCart.items || [],
+          distributions: parsedCart.distributions || [],
+          total: parsedCart.total || 0,
+          itemCount: parsedCart.itemCount || 0,
+        });
       }
     } catch (error) {
       console.error('Error loading cart from localStorage:', error);
@@ -68,18 +74,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
   // Calculate totals whenever items or distributions change
   useEffect(() => {
     const calculateTotals = async () => {
-      const itemCount = cart.items.reduce((sum, item) => sum + item.quantity, 0);
-      const distributionCount = cart.distributions.reduce((sum, dist) => sum + dist.distribution.total_quantity, 0);
+      const itemCount = (cart.items || []).reduce((sum, item) => sum + item.quantity, 0);
+      const distributionCount = (cart.distributions || []).reduce((sum, dist) => sum + dist.distribution.total_quantity, 0);
       const totalCount = itemCount + distributionCount;
 
       let total = 0;
 
-      for (const item of cart.items) {
+      for (const item of (cart.items || [])) {
         const effectivePrice = item.applied_tier_price || item.discounted_price || item.price;
         total += effectivePrice * item.quantity;
       }
 
-      for (const dist of cart.distributions) {
+      for (const dist of (cart.distributions || [])) {
         total += dist.distribution.applied_tier_price * dist.distribution.total_quantity;
       }
 
@@ -224,6 +230,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const clearCart = () => {
     setCart({
       items: [],
+      distributions: [],
       total: 0,
       itemCount: 0,
     });
