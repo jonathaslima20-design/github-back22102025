@@ -231,7 +231,7 @@ export function TieredPricingManager({
     });
   }, [newTier, tiers, onChange]);
 
-  const handleDeleteTier = useCallback(async (index: number) => {
+  const handleDeleteTier = useCallback((index: number) => {
     setIsDeleting(true);
     try {
       const updatedTiers = tiers.filter((_, i) => i !== index);
@@ -547,7 +547,11 @@ export function TieredPricingManager({
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() => setDeleteConfirmIndex(index)}
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      setDeleteConfirmIndex(index);
+                                    }}
                                   >
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
@@ -679,7 +683,13 @@ export function TieredPricingManager({
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => deleteConfirmIndex !== null && handleDeleteTier(deleteConfirmIndex)}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (deleteConfirmIndex !== null) {
+                  handleDeleteTier(deleteConfirmIndex);
+                }
+              }}
               className="bg-red-600 hover:bg-red-700"
               disabled={isDeleting}
             >
