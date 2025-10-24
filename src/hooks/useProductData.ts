@@ -128,7 +128,8 @@ export function useProductData({
           colors,
           sizes,
           display_order,
-          external_checkout_url
+          external_checkout_url,
+          has_tiered_pricing
         `)
         .eq('user_id', userId)
         .eq('is_visible_on_storefront', true)
