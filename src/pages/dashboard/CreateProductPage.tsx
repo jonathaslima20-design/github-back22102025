@@ -382,11 +382,13 @@ export default function CreateProductPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <PricingModeToggle
-                value={pricingMode}
-                onChange={(mode) => {
-                  setPricingMode(mode);
-                  form.setValue('has_tiered_pricing', mode === 'tiered');
+                isTieredPricing={pricingMode === 'tiered'}
+                onModeChange={(useTieredPricing) => {
+                  setPricingMode(useTieredPricing ? 'tiered' : 'simple');
+                  form.setValue('has_tiered_pricing', useTieredPricing);
                 }}
+                hasSinglePriceData={form.watch('price') > 0}
+                hasTieredPriceData={priceTiers.length > 0}
               />
 
               {pricingMode === 'simple' ? (
