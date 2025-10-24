@@ -180,8 +180,41 @@ export interface CartItem {
   applied_tier_price?: number;
 }
 
+export interface DistributionItem {
+  id: string;
+  distribution_id: string;
+  color?: string;
+  size?: string;
+  quantity: number;
+  created_at?: string;
+}
+
+export interface VariantDistribution {
+  id: string;
+  user_id: string;
+  product_id: string;
+  total_quantity: number;
+  applied_tier_price: number;
+  metadata?: {
+    tier_id?: string;
+    min_quantity?: number;
+    max_quantity?: number | null;
+    original_price?: number;
+  };
+  created_at?: string;
+  updated_at?: string;
+  items?: DistributionItem[];
+}
+
+export interface CartDistribution {
+  distribution: VariantDistribution;
+  product: Product;
+  items: DistributionItem[];
+}
+
 export interface CartState {
   items: CartItem[];
+  distributions: CartDistribution[];
   total: number;
   itemCount: number;
 }

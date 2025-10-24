@@ -8,7 +8,8 @@ import {
   Loader,
   ShoppingCart,
   Plus,
-  Minus
+  Minus,
+  Package
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -23,6 +24,7 @@ import ImageGallery from '@/components/details/ImageGallery';
 import ItemDescription from '@/components/details/ItemDescription';
 import ContactSidebar from '@/components/details/ContactSidebar';
 import ProductVariantModal from '@/components/product/ProductVariantModal';
+import { ProductDistributionModal } from '@/components/product/ProductDistributionModal';
 import TieredPricingTable from '@/components/details/TieredPricingTable';
 import TieredPricingSkeleton from '@/components/details/TieredPricingSkeleton';
 import { useTieredPricing } from '@/hooks/useTieredPricing';
@@ -35,13 +37,14 @@ export default function ProductDetailsPage() {
   const [error, setError] = useState<string | null>(null);
   const [shareSupported, setShareSupported] = useState(false);
   const [showVariantModal, setShowVariantModal] = useState(false);
+  const [showDistributionModal, setShowDistributionModal] = useState(false);
   const { theme } = useTheme();
   const [language, setLanguage] = useState<SupportedLanguage>('pt-BR');
   const [currency, setCurrency] = useState<SupportedCurrency>('BRL');
   const { isInCart, getItemQuantity } = useCart();
-  
+
   const { t } = useTranslation(language);
-  const { addToCart } = useCart();
+  const { addToCart, addDistribution } = useCart();
 
   const { tiers: priceTiers, loading: loadingTiers } = useTieredPricing(
     product?.id,
@@ -481,7 +484,7 @@ export default function ProductDetailsPage() {
 
               {/* Add to Cart Button - Always show for available products with price */}
               {isAvailable && hasPrice && (
-                <div className="mt-8 pt-2">
+                <div className="mt-8 pt-2 space-y-3">
                   <Button
                     size="lg"
                     className="w-full"
@@ -490,6 +493,19 @@ export default function ProductDetailsPage() {
                     <ShoppingCart className="h-5 w-5 mr-2" />
                     Adicionar ao Carrinho
                   </Button>
+
+                  {/* Distribution Button - Show only if product has tiered pricing AND variations */}
+                  {product.has_tiered_pricing && hasOptions && priceTiers.length > 0 && (
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      className="w-full border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950"
+                      onClick={() => setShowDistributionModal(true)}
+                    >
+                      <Plus className="h-5 w-5 mr-2" />
+                      Distribuir Variações com Preço Escalonado
+                    </Button>
+                  )}
                 </div>
               )}
 
@@ -574,6 +590,19 @@ export default function ProductDetailsPage() {
         product={product}
         currency={currency}
         language={language}
+      />
+
+      {/* Distribution Modal */}
+      <ProductDistributionModal
+        open={showDistributionModal}
+        onClose={() => setShowDistributionModal(false)}
+        product={product}
+        onConfirm={async (totalQuantity, items) => {
+          const success = await addDistribution(product, totalQuantity, items);
+          if (success) {
+            setShowDistributionModal(false);
+          }
+        }}
       />
     </div>
   );

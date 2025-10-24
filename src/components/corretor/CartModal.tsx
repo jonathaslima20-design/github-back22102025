@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Plus, Minus, Trash2, ShoppingCart, MessageCircle, Edit3, Palette, Ruler, TrendingDown } from 'lucide-react';
+import { X, Plus, Minus, Trash2, ShoppingCart, MessageCircle, Edit3, Palette, Ruler, TrendingDown, Package, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -50,12 +50,13 @@ export default function CartModal({
   currency = 'BRL',
   language = 'pt-BR'
 }: CartModalProps) {
-  const { cart, updateVariantQuantity, removeCartVariant, clearCart, updateVariantNotes, updateVariantOptions } = useCart();
+  const { cart, updateVariantQuantity, removeCartVariant, clearCart, updateVariantNotes, updateVariantOptions, removeDistribution } = useCart();
   const { t } = useTranslation(language);
   const [sendingOrder, setSendingOrder] = useState(false);
   const [editingNotes, setEditingNotes] = useState<string | null>(null);
   const [editingVariant, setEditingVariant] = useState<string | null>(null);
   const [productTiers, setProductTiers] = useState<Map<string, { tiers: PriceTier[], hasTieredPricing: boolean }>>(new Map());
+  const [expandedDistributions, setExpandedDistributions] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const loadTieredPricing = async () => {
@@ -91,12 +92,13 @@ export default function CartModal({
       corretor.name,
       corretor.slug || '',
       currency,
-      language
+      language,
+      cart.distributions
     );
   };
 
   const handleSendOrder = async () => {
-    if (cart.items.length === 0) return;
+    if (cart.items.length === 0 && cart.distributions.length === 0) return;
     
     try {
       setSendingOrder(true);
@@ -159,14 +161,14 @@ export default function CartModal({
             Carrinho de Compras
           </DialogTitle>
           <DialogDescription>
-            {cart.items.length === 0 
+            {cart.items.length === 0 && cart.distributions.length === 0
               ? 'Seu carrinho está vazio'
               : `${cart.itemCount} ${cart.itemCount === 1 ? 'item' : 'itens'} no carrinho`
             }
           </DialogDescription>
         </DialogHeader>
 
-        {cart.items.length === 0 ? (
+        {cart.items.length === 0 && cart.distributions.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <ShoppingCart className="h-12 w-12 text-muted-foreground mb-4" />
             <p className="text-muted-foreground">
@@ -177,6 +179,118 @@ export default function CartModal({
           <>
             {/* Cart Items */}
             <div className="flex-1 overflow-y-auto space-y-3 max-h-[400px]">
+              {/* Distribution Groups */}
+              {cart.distributions.map((dist) => {
+                const isExpanded = expandedDistributions.has(dist.distribution.id);
+                const totalPrice = dist.distribution.applied_tier_price * dist.distribution.total_quantity;
+
+                return (
+                  <div key={dist.distribution.id} className="border rounded-lg overflow-hidden">
+                    {/* Distribution Header */}
+                    <div
+                      className="flex gap-3 p-3 bg-blue-50 dark:bg-blue-950 border-b cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900 transition-colors"
+                      onClick={() => {
+                        setExpandedDistributions(prev => {
+                          const newSet = new Set(prev);
+                          if (newSet.has(dist.distribution.id)) {
+                            newSet.delete(dist.distribution.id);
+                          } else {
+                            newSet.add(dist.distribution.id);
+                          }
+                          return newSet;
+                        });
+                      }}
+                    >
+                      <div className="w-16 h-16 bg-white rounded-lg overflow-hidden border border-gray-200 shadow-sm flex-shrink-0">
+                        <img
+                          src={dist.product.featured_image_url || 'https://images.pexels.com/photos/3802510/pexels-photo-3802510.jpeg'}
+                          alt={dist.product.title}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between mb-1">
+                          <h4 className="font-medium text-sm line-clamp-2">
+                            {dist.product.title}
+                          </h4>
+                          {isExpanded ? (
+                            <ChevronUp className="h-4 w-4 flex-shrink-0 ml-2" />
+                          ) : (
+                            <ChevronDown className="h-4 w-4 flex-shrink-0 ml-2" />
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-2 mb-2">
+                          <Badge className="bg-blue-600 text-white text-xs">
+                            <Package className="h-3 w-3 mr-1" />
+                            Distribuição
+                          </Badge>
+                          <Badge variant="outline" className="text-xs">
+                            {dist.distribution.total_quantity} unidades
+                          </Badge>
+                          <Badge variant="outline" className="text-xs">
+                            {dist.items.length} variações
+                          </Badge>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <div className="text-sm text-primary font-semibold">
+                            {formatCurrencyI18n(dist.distribution.applied_tier_price, currency, language)} / un
+                          </div>
+                          <div className="text-sm font-semibold">
+                            {formatCurrencyI18n(totalPrice, currency, language)}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Distribution Items (Expanded) */}
+                    {isExpanded && (
+                      <div className="p-3 space-y-2 bg-gray-50 dark:bg-gray-900">
+                        {dist.items.map((item) => (
+                          <div key={item.id} className="flex items-center gap-2 text-xs">
+                            <div className="flex-1 flex items-center gap-2">
+                              {item.color && (
+                                <div className="flex items-center gap-1">
+                                  <Palette className="h-3 w-3 text-muted-foreground" />
+                                  <span className="capitalize">{item.color}</span>
+                                </div>
+                              )}
+                              {item.size && (
+                                <div className="flex items-center gap-1">
+                                  <Ruler className="h-3 w-3 text-muted-foreground" />
+                                  <span>{item.size}</span>
+                                </div>
+                              )}
+                            </div>
+                            <Badge variant="secondary" className="text-xs">
+                              {item.quantity}x
+                            </Badge>
+                          </div>
+                        ))}
+
+                        <Separator className="my-2" />
+
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          className="w-full text-xs h-8"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeDistribution(dist.distribution.id);
+                          }}
+                        >
+                          <Trash2 className="h-3 w-3 mr-1" />
+                          Remover Distribuição
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+
+              {/* Regular Cart Items */}
               {cart.items.map((item) => {
                 const tierInfo = productTiers.get(item.id);
                 const hasTieredPricing = item.has_tiered_pricing || tierInfo?.hasTieredPricing || false;

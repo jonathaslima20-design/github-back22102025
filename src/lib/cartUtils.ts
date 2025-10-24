@@ -1,4 +1,4 @@
-import type { CartItem } from '@/types';
+import type { CartItem, CartDistribution } from '@/types';
 import { formatCurrencyI18n, generateWhatsAppMessage, type SupportedLanguage, type SupportedCurrency } from '@/lib/i18n';
 
 /**
@@ -10,9 +10,10 @@ export function generateCartOrderMessage(
   sellerName: string,
   corretorSlug: string,
   currency: SupportedCurrency = 'BRL',
-  language: SupportedLanguage = 'pt-BR'
+  language: SupportedLanguage = 'pt-BR',
+  distributions: CartDistribution[] = []
 ): string {
-  if (cartItems.length === 0) return '';
+  if (cartItems.length === 0 && distributions.length === 0) return '';
 
   // Simplified greeting for cart orders
   const greeting = `Olá ${sellerName}, gostaria de realizar um pedido com os itens abaixo.`;
@@ -29,28 +30,94 @@ export function generateCartOrderMessage(
   orderMessage += `*${orderTitles[language] || orderTitles['pt-BR']}*\n`;
   orderMessage += `━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
 
-  // Add each item
-  cartItems.forEach((item, index) => {
+  let itemNumber = 1;
+
+  // Add distribution groups first
+  distributions.forEach((dist) => {
+    const price = dist.distribution.applied_tier_price;
+    const totalPrice = price * dist.distribution.total_quantity;
+
+    orderMessage += `${itemNumber}. *${dist.product.title.trim()}*\n`;
+    orderMessage += `   📦 Distribuição de Variações\n`;
+
+    // Add product link
+    if (corretorSlug) {
+      try {
+        const isProduction = typeof window !== 'undefined' &&
+          (window.location.hostname === 'vitrineturbo.com' ||
+           window.location.hostname.includes('netlify.app') ||
+           window.location.hostname.includes('vercel.app'));
+        const baseUrl = isProduction ? 'https://vitrineturbo.com' :
+          (typeof window !== 'undefined' ? window.location.origin : 'https://vitrineturbo.com');
+        const productUrl = `${baseUrl}/${corretorSlug}/produtos/${dist.product.id}`;
+        orderMessage += `${productUrl}\n`;
+      } catch {
+        orderMessage += `Ver produto\n`;
+      }
+    }
+
+    const quantityLabels = {
+      'pt-BR': 'Quantidade Total',
+      'en-US': 'Total Quantity',
+      'es-ES': 'Cantidad Total',
+    };
+
+    const unitPriceLabels = {
+      'pt-BR': 'Preço unitário',
+      'en-US': 'Unit price',
+      'es-ES': 'Precio unitario',
+    };
+
+    const subtotalLabels = {
+      'pt-BR': 'Subtotal',
+      'en-US': 'Subtotal',
+      'es-ES': 'Subtotal',
+    };
+
+    const distributionLabels = {
+      'pt-BR': 'Distribuição',
+      'en-US': 'Distribution',
+      'es-ES': 'Distribución',
+    };
+
+    orderMessage += `   ${quantityLabels[language] || quantityLabels['pt-BR']}: ${dist.distribution.total_quantity}\n`;
+    orderMessage += `   ${unitPriceLabels[language] || unitPriceLabels['pt-BR']}: ${formatCurrencyI18n(price, currency, language)}\n`;
+    orderMessage += `   ${subtotalLabels[language] || subtotalLabels['pt-BR']}: ${formatCurrencyI18n(totalPrice, currency, language)}\n`;
+
+    if (dist.items.length > 0) {
+      orderMessage += `\n   ${distributionLabels[language] || distributionLabels['pt-BR']}:\n`;
+      dist.items.forEach((item) => {
+        const variantInfo = [item.color, item.size].filter(Boolean).join(' • ');
+        orderMessage += `   • ${item.quantity}x ${variantInfo || 'Padrão'}\n`;
+      });
+    }
+
+    orderMessage += `\n`;
+    itemNumber++;
+  });
+
+  // Add regular cart items
+  cartItems.forEach((item) => {
     const price = item.applied_tier_price || item.discounted_price || item.price;
     const itemTotal = price * item.quantity;
 
-    orderMessage += `${index + 1}. *${item.title.trim()}*\n`;
-    
+    orderMessage += `${itemNumber}. *${item.title.trim()}*\n`;
+
     // Add variant information if available
     if (item.selectedColor || item.selectedSize) {
       const variantInfo = [item.selectedColor, item.selectedSize].filter(Boolean).join(' • ');
       orderMessage += `   Variação: ${variantInfo}\n`;
     }
-    
+
     // Add product link for easy access to full details
     if (corretorSlug) {
       try {
         // Use production domain in production, otherwise use current origin
-        const isProduction = typeof window !== 'undefined' && 
-          (window.location.hostname === 'vitrineturbo.com' || 
+        const isProduction = typeof window !== 'undefined' &&
+          (window.location.hostname === 'vitrineturbo.com' ||
            window.location.hostname.includes('netlify.app') ||
            window.location.hostname.includes('vercel.app'));
-        const baseUrl = isProduction ? 'https://vitrineturbo.com' : 
+        const baseUrl = isProduction ? 'https://vitrineturbo.com' :
           (typeof window !== 'undefined' ? window.location.origin : 'https://vitrineturbo.com');
         const productUrl = `${baseUrl}/${corretorSlug}/produtos/${item.id}`;
         orderMessage += `${productUrl}\n`;
@@ -59,29 +126,29 @@ export function generateCartOrderMessage(
         orderMessage += `Ver produto\n`;
       }
     }
-    
+
     const quantityLabels = {
       'pt-BR': 'Quantidade',
       'en-US': 'Quantity',
       'es-ES': 'Cantidad',
     };
-    
+
     const unitPriceLabels = {
       'pt-BR': 'Preço unitário',
       'en-US': 'Unit price',
       'es-ES': 'Precio unitario',
     };
-    
+
     const subtotalLabels = {
       'pt-BR': 'Subtotal',
       'en-US': 'Subtotal',
       'es-ES': 'Subtotal',
     };
-    
+
     orderMessage += `   ${quantityLabels[language] || quantityLabels['pt-BR']}: ${item.quantity}\n`;
     orderMessage += `   ${unitPriceLabels[language] || unitPriceLabels['pt-BR']}: ${formatCurrencyI18n(price, currency, language)}\n`;
     orderMessage += `   ${subtotalLabels[language] || subtotalLabels['pt-BR']}: ${formatCurrencyI18n(itemTotal, currency, language)}\n`;
-    
+
     // Add notes if they exist
     if (item.notes && item.notes.trim()) {
       const notesLabels = {
@@ -91,8 +158,9 @@ export function generateCartOrderMessage(
       };
       orderMessage += `   ${notesLabels[language] || notesLabels['pt-BR']}: ${item.notes}\n`;
     }
-    
+
     orderMessage += `\n`;
+    itemNumber++;
   });
 
   // Order footer
