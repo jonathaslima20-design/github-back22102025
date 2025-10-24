@@ -186,12 +186,19 @@ export default function ProductVariantModal({
     const result = calculateApplicablePrice(
       quantity,
       priceTiers,
-      product.price,
+      product.price || 0,
       product.discounted_price
     );
     price = result.unitPrice;
     totalPrice = result.totalPrice;
     pricingInfo = result;
+  }
+
+  // If price is still 0 or undefined and we have tiered pricing, use the minimum tier price
+  if ((!price || price === 0) && hasTieredPricing && priceTiers.length > 0) {
+    const firstTier = priceTiers[0];
+    price = firstTier.discounted_unit_price || firstTier.unit_price;
+    totalPrice = price * quantity;
   }
 
   return (

@@ -50,13 +50,13 @@ export function ProductCard({
   const baseDisplayPrice = hasDiscount ? product.discounted_price : product.price;
   const displayPrice = effectiveMinPrice !== null ? effectiveMinPrice : baseDisplayPrice;
   const originalPrice = hasDiscount ? product.price : null;
-  const discountPercentage = hasDiscount
+  const discountPercentage = hasDiscount && product.price > 0
     ? Math.round(((product.price - product.discounted_price!) / product.price) * 100)
     : null;
   const isTieredPricing = product.has_tiered_pricing && effectiveMinPrice !== null && effectiveMinPrice > 0;
 
   const isAvailable = product.status === 'disponivel';
-  const hasPrice = displayPrice && displayPrice > 0;
+  const hasPrice = (displayPrice && displayPrice > 0) || (product.has_tiered_pricing && !loadingTiers);
   
   // More robust checking for colors and sizes with debug logging
   const hasColors = product.colors && 
@@ -176,18 +176,18 @@ export function ProductCard({
                 <div className="text-sm md:text-lg font-bold text-muted-foreground animate-pulse">
                   Carregando preços...
                 </div>
-              ) : product.has_tiered_pricing && minimumTieredPrice ? (
+              ) : product.has_tiered_pricing && minimumTieredPrice && minimumTieredPrice > 0 ? (
                 <div className="space-y-0.5 md:space-y-1">
-                  {hasDiscount && originalPrice && (
+                  {hasDiscount && originalPrice && originalPrice > 0 && (
                     <div className="text-[10px] md:text-xs text-muted-foreground line-through">
                       {formatCurrencyI18n(originalPrice, currency, language)}
                     </div>
                   )}
                   <div className="text-sm md:text-lg font-bold text-primary">
-                    A partir de {formatCurrencyI18n(minimumTieredPrice, currency, language)}
+                    a partir de {formatCurrencyI18n(minimumTieredPrice, currency, language)}
                   </div>
                 </div>
-              ) : hasDiscount ? (
+              ) : hasDiscount && displayPrice && displayPrice > 0 ? (
                 <div className="space-y-0.5 md:space-y-1">
                   <div className="text-[10px] md:text-xs text-muted-foreground line-through">
                     {formatCurrencyI18n(originalPrice!, currency, language)}
@@ -197,12 +197,12 @@ export function ProductCard({
                     {formatCurrencyI18n(displayPrice!, currency, language)}
                   </div>
                 </div>
-              ) : (
+              ) : displayPrice && displayPrice > 0 ? (
                 <div className="text-sm md:text-lg font-bold text-primary">
                   {product.is_starting_price ? t('product.starting_from') + ' ' : ''}
                   {formatCurrencyI18n(displayPrice!, currency, language)}
                 </div>
-              )}
+              ) : null}
 
               {/* Short Description */}
               {product.short_description && (

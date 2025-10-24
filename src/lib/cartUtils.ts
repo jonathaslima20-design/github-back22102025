@@ -134,10 +134,11 @@ export function calculateCartStats(cartItems: CartItem[]) {
  * Validate cart item before adding
  */
 export function validateCartItem(item: CartItem): boolean {
+  const hasValidPrice = (item.price && item.price > 0) || (item.has_tiered_pricing && item.applied_tier_price && item.applied_tier_price > 0);
   return !!(
     item.id &&
     item.title &&
-    item.price > 0 &&
+    hasValidPrice &&
     item.quantity > 0
   );
 }

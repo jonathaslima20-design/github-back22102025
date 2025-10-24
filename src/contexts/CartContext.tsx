@@ -85,8 +85,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   const addToCart = (product: Product, selectedColor?: string, selectedSize?: string, quantity: number = 1, appliedTierPrice?: number) => {
-    // Check if product has a price
-    if (!product.price || product.price <= 0) {
+    // Check if product has a price (either base price or tiered price)
+    const hasValidPrice = (product.price && product.price > 0) || (product.has_tiered_pricing && appliedTierPrice && appliedTierPrice > 0);
+
+    if (!hasValidPrice) {
       toast.error('Este produto não pode ser adicionado ao carrinho pois não possui preço definido.');
       return;
     }
@@ -114,11 +116,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
         return { ...prev, items: updatedItems };
       } else {
         // Add new item to cart
+        // For tiered pricing products without base price, use applied tier price as base price
+        const effectivePrice = product.has_tiered_pricing && appliedTierPrice && (!product.price || product.price === 0)
+          ? appliedTierPrice
+          : product.price;
+
         const newItem: CartItem = {
           id: product.id,
           variantId,
           title: product.title,
-          price: product.price,
+          price: effectivePrice,
           discounted_price: product.discounted_price,
           quantity: quantity,
           featured_image_url: product.featured_image_url,
