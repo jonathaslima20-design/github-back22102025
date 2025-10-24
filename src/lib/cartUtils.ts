@@ -31,9 +31,9 @@ export function generateCartOrderMessage(
 
   // Add each item
   cartItems.forEach((item, index) => {
-    const price = item.discounted_price || item.price;
+    const price = item.applied_tier_price || item.discounted_price || item.price;
     const itemTotal = price * item.quantity;
-    
+
     orderMessage += `${index + 1}. *${item.title.trim()}*\n`;
     
     // Add variant information if available
@@ -123,7 +123,7 @@ export function generateCartOrderMessage(
 export function calculateCartStats(cartItems: CartItem[]) {
   const itemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
   const total = cartItems.reduce((sum, item) => {
-    const price = item.discounted_price || item.price;
+    const price = item.applied_tier_price || item.discounted_price || item.price;
     return sum + (price * item.quantity);
   }, 0);
 

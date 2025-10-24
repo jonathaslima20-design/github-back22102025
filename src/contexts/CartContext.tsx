@@ -5,7 +5,7 @@ import { fetchProductPriceTiers, calculateApplicablePrice } from '@/lib/tieredPr
 
 interface CartContextType {
   cart: CartState;
-  addToCart: (product: Product, selectedColor?: string, selectedSize?: string) => void;
+  addToCart: (product: Product, selectedColor?: string, selectedSize?: string, quantity?: number, appliedTierPrice?: number) => void;
   removeFromCart: (productId: string) => void;
   removeCartVariant: (variantId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
@@ -63,8 +63,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
       let total = 0;
       for (const item of cart.items) {
-        const basePrice = item.discounted_price || item.price;
-        total += basePrice * item.quantity;
+        const effectivePrice = item.applied_tier_price || item.discounted_price || item.price;
+        total += effectivePrice * item.quantity;
       }
 
       // Only update if values actually changed to prevent infinite loops
@@ -84,7 +84,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     return `${productId}-${color || 'no-color'}-${size || 'no-size'}`;
   };
 
-  const addToCart = (product: Product, selectedColor?: string, selectedSize?: string) => {
+  const addToCart = (product: Product, selectedColor?: string, selectedSize?: string, quantity: number = 1, appliedTierPrice?: number) => {
     // Check if product has a price
     if (!product.price || product.price <= 0) {
       toast.error('Este produto não pode ser adicionado ao carrinho pois não possui preço definido.');
@@ -95,15 +95,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     setCart(prev => {
       const existingItem = prev.items.find(item => item.variantId === variantId);
-      
+
       if (existingItem) {
         // Update quantity if item already exists
         const updatedItems = prev.items.map(item =>
           item.variantId === variantId
-            ? { ...item, quantity: item.quantity + 1 }
+            ? {
+                ...item,
+                quantity: item.quantity + quantity,
+                applied_tier_price: appliedTierPrice || item.applied_tier_price,
+                has_tiered_pricing: product.has_tiered_pricing || item.has_tiered_pricing
+              }
             : item
         );
-        
+
         const variantText = [selectedColor, selectedSize].filter(Boolean).join(', ');
         toast.success(`Quantidade atualizada: ${product.title}${variantText ? ` (${variantText})` : ''}`);
         return { ...prev, items: updatedItems };
@@ -115,7 +120,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           title: product.title,
           price: product.price,
           discounted_price: product.discounted_price,
-          quantity: 1,
+          quantity: quantity,
           featured_image_url: product.featured_image_url,
           short_description: product.short_description,
           is_starting_price: product.is_starting_price,
@@ -124,8 +129,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
           selectedSize,
           availableColors: product.colors,
           availableSizes: product.sizes,
+          has_tiered_pricing: product.has_tiered_pricing,
+          applied_tier_price: appliedTierPrice,
         };
-        
+
         const variantText = [selectedColor, selectedSize].filter(Boolean).join(', ');
         toast.success(`Adicionado ao carrinho: ${product.title}${variantText ? ` (${variantText})` : ''}`);
         return { ...prev, items: [...prev.items, newItem] };

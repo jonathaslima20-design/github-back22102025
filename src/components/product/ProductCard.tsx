@@ -45,18 +45,18 @@ export function ProductCard({
   }, [product.id, product.has_tiered_pricing]);
 
   // Calculate discount information
-  const effectiveMinPrice = product.has_tiered_pricing && minimumTieredPrice ? minimumTieredPrice : null;
+  const effectiveMinPrice = product.has_tiered_pricing && minimumTieredPrice && minimumTieredPrice > 0 ? minimumTieredPrice : null;
   const hasDiscount = product.discounted_price && product.discounted_price < product.price;
   const baseDisplayPrice = hasDiscount ? product.discounted_price : product.price;
-  const displayPrice = effectiveMinPrice || baseDisplayPrice;
+  const displayPrice = effectiveMinPrice !== null ? effectiveMinPrice : baseDisplayPrice;
   const originalPrice = hasDiscount ? product.price : null;
   const discountPercentage = hasDiscount
     ? Math.round(((product.price - product.discounted_price!) / product.price) * 100)
     : null;
-  const isTieredPricing = product.has_tiered_pricing && effectiveMinPrice !== null;
+  const isTieredPricing = product.has_tiered_pricing && effectiveMinPrice !== null && effectiveMinPrice > 0;
 
   const isAvailable = product.status === 'disponivel';
-  const hasPrice = product.price && product.price > 0;
+  const hasPrice = displayPrice && displayPrice > 0;
   
   // More robust checking for colors and sizes with debug logging
   const hasColors = product.colors && 
