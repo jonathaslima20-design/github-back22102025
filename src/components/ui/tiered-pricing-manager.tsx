@@ -30,7 +30,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Plus, Pencil, Trash2, AlertTriangle, Info, TrendingDown, Package } from 'lucide-react';
+import { Plus, Pencil, Trash2, AlertTriangle, Info, TrendingDown, Package, Loader2 } from 'lucide-react';
 import { getCurrencySymbol, type SupportedLanguage, type SupportedCurrency, getLocaleConfig } from '@/lib/i18n';
 import { toast } from 'sonner';
 
@@ -53,17 +53,20 @@ interface TieredPricingManagerProps {
   onChange: (tiers: PriceTier[]) => void;
   currency?: SupportedCurrency;
   locale?: SupportedLanguage;
+  productId?: string;
 }
 
 export function TieredPricingManager({
   tiers,
   onChange,
   currency = 'BRL',
-  locale = 'pt-BR'
+  locale = 'pt-BR',
+  productId
 }: TieredPricingManagerProps) {
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [deleteConfirmIndex, setDeleteConfirmIndex] = useState<number | null>(null);
   const [editingTier, setEditingTier] = useState<Partial<PriceTier> | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [newTier, setNewTier] = useState<Partial<PriceTier>>({
     min_quantity: 1,
     max_quantity: null,
@@ -218,7 +221,7 @@ export function TieredPricingManager({
     console.log('Updated tiers array:', newTiers);
 
     onChange(newTiers);
-    toast.success('Faixa de preço adicionada com sucesso!');
+    toast.success('Faixa de preço adicionada. Clique em "Salvar Alterações" no final da página para confirmar.');
 
     setNewTier({
       min_quantity: (newTier.max_quantity ?? minQuantity) + 1,
@@ -228,13 +231,21 @@ export function TieredPricingManager({
     });
   }, [newTier, tiers, onChange]);
 
-  const handleDeleteTier = useCallback((index: number) => {
-    const updatedTiers = tiers.filter((_, i) => i !== index);
-    console.log('Removing tier at index:', index);
-    console.log('Updated tiers after removal:', updatedTiers);
-    onChange(updatedTiers);
-    toast.success('Faixa de preço removida com sucesso!');
-    setDeleteConfirmIndex(null);
+  const handleDeleteTier = useCallback(async (index: number) => {
+    setIsDeleting(true);
+    try {
+      const updatedTiers = tiers.filter((_, i) => i !== index);
+      console.log('Removing tier at index:', index);
+      console.log('Updated tiers after removal:', updatedTiers);
+      onChange(updatedTiers);
+      toast.success('Faixa de preço removida. Clique em "Salvar Alterações" no final da página para confirmar.');
+      setDeleteConfirmIndex(null);
+    } catch (error) {
+      console.error('Error deleting tier:', error);
+      toast.error('Erro ao remover faixa de preço');
+    } finally {
+      setIsDeleting(false);
+    }
   }, [tiers, onChange]);
 
   const handleStartEdit = useCallback((index: number) => {
@@ -297,7 +308,7 @@ export function TieredPricingManager({
     console.log('Updated tier data:', updatedTiers[editingIndex]);
 
     onChange(updatedTiers);
-    toast.success('Faixa de preço atualizada com sucesso!');
+    toast.success('Faixa de preço atualizada. Clique em "Salvar Alterações" no final da página para confirmar.');
     handleCancelEdit();
   }, [editingIndex, editingTier, tiers, onChange, handleCancelEdit]);
 
@@ -320,6 +331,13 @@ export function TieredPricingManager({
 
   return (
     <div className="space-y-6">
+      <Alert className="bg-yellow-50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-900">
+        <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+        <AlertDescription className="text-yellow-800 dark:text-yellow-200">
+          <strong>Importante:</strong> Todas as alterações nas faixas de preço (adicionar, editar ou remover) serão salvas apenas quando você clicar em <strong>"Salvar Alterações"</strong> no final da página.
+        </AlertDescription>
+      </Alert>
+
       <div className="flex items-start gap-2 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-900">
         <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
         <div className="space-y-2 text-sm">
@@ -659,12 +677,20 @@ export function TieredPricingManager({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deleteConfirmIndex !== null && handleDeleteTier(deleteConfirmIndex)}
               className="bg-red-600 hover:bg-red-700"
+              disabled={isDeleting}
             >
-              Remover
+              {isDeleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Removendo...
+                </>
+              ) : (
+                'Remover'
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

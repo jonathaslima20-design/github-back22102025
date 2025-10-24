@@ -1146,6 +1146,7 @@ export default function EditProductPage() {
                       }}
                       currency={user?.currency || 'BRL'}
                       locale={user?.language || 'pt-BR'}
+                      productId={id}
                     />
                   )}
                 </CardContent>
