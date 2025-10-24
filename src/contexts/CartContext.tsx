@@ -476,7 +476,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
         distributions: cartDistributions.filter(d => d.product),
       }));
     } catch (error) {
-      console.error('Error loading distributions:', error);
+      // Don't log error for missing tables - this is expected before migrations
+      if (error && typeof error === 'object' && 'code' in error && error.code === '42P01') {
+        // Silently handle missing table - distributions will just be empty
+        setCart(prev => ({
+          ...prev,
+          distributions: [],
+        }));
+      } else {
+        console.error('Error loading distributions:', error);
+      }
     }
   };
 

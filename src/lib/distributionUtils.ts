@@ -22,6 +22,17 @@ export async function createDistribution(
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
+    // Check if the table exists before attempting to create
+    const { error: tableCheckError } = await supabase
+      .from('cart_variant_distributions')
+      .select('id')
+      .limit(1);
+
+    if (tableCheckError && tableCheckError.code === '42P01') {
+      console.warn('Cart distribution tables not found. Please apply database migrations.');
+      return null;
+    }
+
     const priceResult = calculateApplicablePrice(
       params.total_quantity,
       tiers,
@@ -70,6 +81,10 @@ export async function createDistribution(
 
     return distribution;
   } catch (error) {
+    if (error && typeof error === 'object' && 'code' in error && error.code === '42P01') {
+      console.warn('Cart distribution tables not found. Please apply database migrations.');
+      return null;
+    }
     console.error('Error creating distribution:', error);
     return null;
   }
@@ -176,6 +191,18 @@ export async function fetchUserDistributions(): Promise<VariantDistribution[]> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return [];
 
+    // Check if the table exists by attempting a simple query
+    const { error: tableCheckError } = await supabase
+      .from('cart_variant_distributions')
+      .select('id')
+      .limit(1);
+
+    // If table doesn't exist, return empty array instead of throwing error
+    if (tableCheckError && tableCheckError.code === '42P01') {
+      console.warn('Cart distribution tables not found. Please apply database migrations.');
+      return [];
+    }
+
     // First fetch distributions
     const { data: distributions, error: distError } = await supabase
       .from('cart_variant_distributions')
@@ -205,6 +232,11 @@ export async function fetchUserDistributions(): Promise<VariantDistribution[]> {
 
     return distributionsWithItems;
   } catch (error) {
+    // Handle missing table error gracefully
+    if (error && typeof error === 'object' && 'code' in error && error.code === '42P01') {
+      console.warn('Cart distribution tables not found. Please apply database migrations.');
+      return [];
+    }
     console.error('Error fetching distributions:', error);
     return [];
   }
