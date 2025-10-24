@@ -18,6 +18,7 @@ import { CustomSizeInput } from '@/components/ui/custom-size-input';
 import { ImageCropperProduct } from '@/components/ui/image-cropper-product';
 import { TieredPricingManager } from '@/components/ui/tiered-pricing-manager';
 import { PricingModeToggle } from '@/components/ui/pricing-mode-toggle';
+import { ProductImageManager } from '@/components/product/ProductImageManager';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
@@ -67,12 +68,13 @@ export default function EditProductPage() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
-  const [featuredImage, setFeaturedImage] = useState<File | null>(null);
-  const [featuredImagePreview, setFeaturedImagePreview] = useState<string>('');
-  const [existingImages, setExistingImages] = useState<ProductImage[]>([]);
+  const [productImages, setProductImages] = useState<Array<{
+    id: string;
+    url: string;
+    file?: File;
+    isFeatured: boolean;
+  }>>([]);
   const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
-  const [additionalImages, setAdditionalImages] = useState<File[]>([]);
-  const [additionalImagePreviews, setAdditionalImagePreviews] = useState<string[]>([]);
   const [pricingMode, setPricingMode] = useState<'simple' | 'tiered'>('simple');
   const [priceTiers, setPriceTiers] = useState<PriceTier[]>([]);
 
@@ -140,11 +142,22 @@ export default function EditProductPage() {
           has_tiered_pricing: product.has_tiered_pricing || false,
         });
 
-        if (product.featured_image_url) {
-          setFeaturedImagePreview(product.featured_image_url);
-        }
-
         setPricingMode(product.has_tiered_pricing ? 'tiered' : 'simple');
+
+        const allImages: Array<{
+          id: string;
+          url: string;
+          file?: File;
+          isFeatured: boolean;
+        }> = [];
+
+        if (product.featured_image_url) {
+          allImages.push({
+            id: 'featured-existing',
+            url: product.featured_image_url,
+            isFeatured: true
+          });
+        }
 
         const { data: images, error: imagesError } = await supabase
           .from('product_images')
@@ -153,8 +166,16 @@ export default function EditProductPage() {
 
         if (imagesError) throw imagesError;
         if (images) {
-          setExistingImages(images);
+          images.forEach(img => {
+            allImages.push({
+              id: img.id,
+              url: img.url,
+              isFeatured: false
+            });
+          });
         }
+
+        setProductImages(allImages);
 
         if (product.has_tiered_pricing) {
           const { data: tiers, error: tiersError } = await supabase
@@ -185,40 +206,22 @@ export default function EditProductPage() {
     fetchProduct();
   }, [id, user?.id, navigate, form]);
 
-  const handleFeaturedImageChange = (file: File | null) => {
-    setFeaturedImage(file);
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFeaturedImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+  const handleImagesChange = (newImages: Array<{
+    id: string;
+    url: string;
+    file?: File;
+    isFeatured: boolean;
+  }>) => {
+    const currentImageIds = new Set(productImages.map(img => img.id));
+    const newImageIds = new Set(newImages.map(img => img.id));
 
-  const handleAdditionalImagesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const files = Array.from(e.target.files);
-      setAdditionalImages(prev => [...prev, ...files]);
+    currentImageIds.forEach(id => {
+      if (!newImageIds.has(id) && id !== 'featured-existing' && !id.startsWith('new-')) {
+        setImagesToDelete(prev => [...prev, id]);
+      }
+    });
 
-      files.forEach(file => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setAdditionalImagePreviews(prev => [...prev, reader.result as string]);
-        };
-        reader.readAsDataURL(file);
-      });
-    }
-  };
-
-  const removeAdditionalImage = (index: number) => {
-    setAdditionalImages(prev => prev.filter((_, i) => i !== index));
-    setAdditionalImagePreviews(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const removeExistingImage = (imageId: string) => {
-    setImagesToDelete(prev => [...prev, imageId]);
-    setExistingImages(prev => prev.filter(img => img.id !== imageId));
+    setProductImages(newImages);
   };
 
   const onSubmit = async (data: ProductFormData) => {
@@ -231,9 +234,11 @@ export default function EditProductPage() {
 
     setLoading(true);
     try {
-      let featuredImageUrl = featuredImagePreview;
-      if (featuredImage) {
-        const uploadResult = await uploadImage(featuredImage, user.id, 'product');
+      const featuredImage = productImages.find(img => img.isFeatured);
+      let featuredImageUrl = featuredImage?.url || '';
+
+      if (featuredImage?.file) {
+        const uploadResult = await uploadImage(featuredImage.file, user.id, 'product');
         if (uploadResult) {
           featuredImageUrl = uploadResult;
         }
@@ -278,11 +283,16 @@ export default function EditProductPage() {
         if (deleteError) throw deleteError;
       }
 
-      if (additionalImages.length > 0) {
+      const newImages = productImages.filter(img => !img.isFeatured && img.file);
+
+      if (newImages.length > 0) {
         const imageUrls = await Promise.all(
-          additionalImages.map(async (image) => {
-            const url = await uploadImage(image, user.id, 'product');
-            return url;
+          newImages.map(async (image) => {
+            if (image.file) {
+              const url = await uploadImage(image.file, user.id, 'product');
+              return url;
+            }
+            return null;
           })
         );
 
@@ -665,81 +675,13 @@ export default function EditProductPage() {
             <CardHeader>
               <CardTitle>Imagens</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <FormLabel>Imagem Principal</FormLabel>
-                <div className="mt-2">
-                  <ImageCropperProduct
-                    onImageCropped={handleFeaturedImageChange}
-                    currentImageUrl={featuredImagePreview}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <FormLabel>Imagens Adicionais</FormLabel>
-                <div className="mt-2 space-y-4">
-                  {existingImages.length > 0 && (
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      {existingImages.map((image) => (
-                        <div key={image.id} className="relative group">
-                          <img
-                            src={image.url}
-                            alt="Product"
-                            className="w-full h-32 object-cover rounded-lg"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => removeExistingImage(image.id)}
-                            className="absolute top-2 right-2 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="flex items-center justify-center w-full">
-                    <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-accent/50">
-                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                        <Upload className="w-8 h-8 mb-2 text-muted-foreground" />
-                        <p className="text-sm text-muted-foreground">
-                          Clique para adicionar imagens
-                        </p>
-                      </div>
-                      <input
-                        type="file"
-                        className="hidden"
-                        multiple
-                        accept="image/*"
-                        onChange={handleAdditionalImagesChange}
-                      />
-                    </label>
-                  </div>
-
-                  {additionalImagePreviews.length > 0 && (
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      {additionalImagePreviews.map((preview, index) => (
-                        <div key={index} className="relative group">
-                          <img
-                            src={preview}
-                            alt={`Preview ${index + 1}`}
-                            className="w-full h-32 object-cover rounded-lg"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => removeAdditionalImage(index)}
-                            className="absolute top-2 right-2 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
+            <CardContent className="space-y-6">
+              <ProductImageManager
+                images={productImages}
+                onChange={handleImagesChange}
+                maxImages={10}
+                maxFileSize={5}
+              />
 
               <FormField
                 control={form.control}

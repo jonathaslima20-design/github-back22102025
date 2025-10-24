@@ -21,6 +21,7 @@ import { CustomSizeInput } from '@/components/ui/custom-size-input';
 import { ImageCropperProduct } from '@/components/ui/image-cropper-product';
 import { TieredPricingManager } from '@/components/ui/tiered-pricing-manager';
 import { PricingModeToggle } from '@/components/ui/pricing-mode-toggle';
+import { ProductImageManager } from '@/components/product/ProductImageManager';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
@@ -62,10 +63,12 @@ export default function CreateProductPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [featuredImage, setFeaturedImage] = useState<File | null>(null);
-  const [featuredImagePreview, setFeaturedImagePreview] = useState<string>('');
-  const [additionalImages, setAdditionalImages] = useState<File[]>([]);
-  const [additionalImagePreviews, setAdditionalImagePreviews] = useState<string[]>([]);
+  const [productImages, setProductImages] = useState<Array<{
+    id: string;
+    url: string;
+    file?: File;
+    isFeatured: boolean;
+  }>>([]);
   const [pricingMode, setPricingMode] = useState<'simple' | 'tiered'>('simple');
   const [priceTiers, setPriceTiers] = useState<PriceTier[]>([
     { min_quantity: 1, max_quantity: null, unit_price: 0, discounted_unit_price: null }
@@ -95,38 +98,6 @@ export default function CreateProductPage() {
     },
   });
 
-  const handleFeaturedImageChange = (file: File | null) => {
-    setFeaturedImage(file);
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFeaturedImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    } else {
-      setFeaturedImagePreview('');
-    }
-  };
-
-  const handleAdditionalImagesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const files = Array.from(e.target.files);
-      setAdditionalImages(prev => [...prev, ...files]);
-
-      files.forEach(file => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setAdditionalImagePreviews(prev => [...prev, reader.result as string]);
-        };
-        reader.readAsDataURL(file);
-      });
-    }
-  };
-
-  const removeAdditionalImage = (index: number) => {
-    setAdditionalImages(prev => prev.filter((_, i) => i !== index));
-    setAdditionalImagePreviews(prev => prev.filter((_, i) => i !== index));
-  };
 
   const onSubmit = async (data: ProductFormData) => {
     if (!user?.id) {
@@ -141,9 +112,11 @@ export default function CreateProductPage() {
 
     setLoading(true);
     try {
+      const featuredImage = productImages.find(img => img.isFeatured);
       let featuredImageUrl = '';
-      if (featuredImage) {
-        const uploadResult = await uploadImage(featuredImage, user.id, 'product');
+
+      if (featuredImage?.file) {
+        const uploadResult = await uploadImage(featuredImage.file, user.id, 'product');
         if (uploadResult) {
           featuredImageUrl = uploadResult;
         }
@@ -180,11 +153,16 @@ export default function CreateProductPage() {
 
       if (productError) throw productError;
 
+      const additionalImages = productImages.filter(img => !img.isFeatured && img.file);
+
       if (additionalImages.length > 0) {
         const imageUrls = await Promise.all(
           additionalImages.map(async (image) => {
-            const url = await uploadImage(image, user.id, 'product');
-            return url;
+            if (image.file) {
+              const url = await uploadImage(image.file, user.id, 'product');
+              return url;
+            }
+            return null;
           })
         );
 
@@ -541,60 +519,13 @@ export default function CreateProductPage() {
             <CardHeader>
               <CardTitle>Imagens</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <FormLabel>Imagem Principal *</FormLabel>
-                <div className="mt-2">
-                  <ImageCropperProduct
-                    onImageCropped={handleFeaturedImageChange}
-                    currentImageUrl={featuredImagePreview}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <FormLabel>Imagens Adicionais</FormLabel>
-                <div className="mt-2 space-y-4">
-                  <div className="flex items-center justify-center w-full">
-                    <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-accent/50">
-                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                        <Upload className="w-8 h-8 mb-2 text-muted-foreground" />
-                        <p className="text-sm text-muted-foreground">
-                          Clique para adicionar imagens
-                        </p>
-                      </div>
-                      <input
-                        type="file"
-                        className="hidden"
-                        multiple
-                        accept="image/*"
-                        onChange={handleAdditionalImagesChange}
-                      />
-                    </label>
-                  </div>
-
-                  {additionalImagePreviews.length > 0 && (
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      {additionalImagePreviews.map((preview, index) => (
-                        <div key={index} className="relative group">
-                          <img
-                            src={preview}
-                            alt={`Preview ${index + 1}`}
-                            className="w-full h-32 object-cover rounded-lg"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => removeAdditionalImage(index)}
-                            className="absolute top-2 right-2 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
+            <CardContent className="space-y-6">
+              <ProductImageManager
+                images={productImages}
+                onChange={setProductImages}
+                maxImages={10}
+                maxFileSize={5}
+              />
 
               <FormField
                 control={form.control}
