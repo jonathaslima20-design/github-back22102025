@@ -222,3 +222,41 @@ function createImage(url: string): Promise<HTMLImageElement> {
 function getRadianAngle(degreeValue: number) {
   return (degreeValue * Math.PI) / 180;
 }
+
+export async function uploadImage(file: File, userId: string, folder: string): Promise<string> {
+  const { supabase } = await import('./supabase');
+
+  const fileExt = file.name.split('.').pop();
+  const fileName = `${userId}-${Date.now()}.${fileExt}`;
+  const filePath = `${folder}/${fileName}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from('public')
+    .upload(filePath, file, {
+      cacheControl: '3600',
+      upsert: true,
+    });
+
+  if (uploadError) throw uploadError;
+
+  const { data: { publicUrl } } = supabase.storage
+    .from('public')
+    .getPublicUrl(filePath);
+
+  return publicUrl;
+}
+
+export async function deleteImage(url: string): Promise<void> {
+  const { supabase } = await import('./supabase');
+
+  const urlObj = new URL(url);
+  const path = urlObj.pathname.split('/public/')[1];
+
+  if (path) {
+    const { error } = await supabase.storage
+      .from('public')
+      .remove([path]);
+
+    if (error) throw error;
+  }
+}
