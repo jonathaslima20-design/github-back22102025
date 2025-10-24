@@ -115,3 +115,60 @@ export function getBestValueTier(tiers: PriceTier[]): PriceTier | null {
     return currentPrice < bestPrice ? current : best;
   }, tiers[0]);
 }
+
+export async function updatePriceTier(
+  tierId: string,
+  updates: Partial<Pick<PriceTier, 'min_quantity' | 'max_quantity' | 'unit_price' | 'discounted_unit_price'>>
+): Promise<PriceTier | null> {
+  const { data, error } = await supabase
+    .from('product_price_tiers')
+    .update(updates)
+    .eq('id', tierId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error updating price tier:', error);
+    throw new Error('Failed to update price tier');
+  }
+
+  return data;
+}
+
+export async function deletePriceTier(tierId: string): Promise<boolean> {
+  const { error } = await supabase
+    .from('product_price_tiers')
+    .delete()
+    .eq('id', tierId);
+
+  if (error) {
+    console.error('Error deleting price tier:', error);
+    throw new Error('Failed to delete price tier');
+  }
+
+  return true;
+}
+
+export async function createPriceTier(
+  productId: string,
+  tier: Omit<PriceTier, 'id' | 'product_id' | 'created_at'>
+): Promise<PriceTier | null> {
+  const { data, error } = await supabase
+    .from('product_price_tiers')
+    .insert({
+      product_id: productId,
+      min_quantity: tier.min_quantity,
+      max_quantity: tier.max_quantity,
+      unit_price: tier.unit_price,
+      discounted_unit_price: tier.discounted_unit_price
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error creating price tier:', error);
+    throw new Error('Failed to create price tier');
+  }
+
+  return data;
+}

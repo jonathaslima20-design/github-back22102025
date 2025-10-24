@@ -63,6 +63,7 @@ export function TieredPricingManager({
 }: TieredPricingManagerProps) {
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [deleteConfirmIndex, setDeleteConfirmIndex] = useState<number | null>(null);
+  const [editingTier, setEditingTier] = useState<Partial<PriceTier> | null>(null);
   const [newTier, setNewTier] = useState<Partial<PriceTier>>({
     min_quantity: 1,
     max_quantity: null,
@@ -236,6 +237,70 @@ export function TieredPricingManager({
     setDeleteConfirmIndex(null);
   }, [tiers, onChange]);
 
+  const handleStartEdit = useCallback((index: number) => {
+    const tier = tiers[index];
+    setEditingIndex(index);
+    setEditingTier({
+      min_quantity: tier.min_quantity,
+      max_quantity: tier.max_quantity,
+      unit_price: tier.unit_price,
+      discounted_unit_price: tier.discounted_unit_price
+    });
+  }, [tiers]);
+
+  const handleCancelEdit = useCallback(() => {
+    setEditingIndex(null);
+    setEditingTier(null);
+  }, []);
+
+  const handleSaveEdit = useCallback(() => {
+    if (editingIndex === null || !editingTier) return;
+
+    if (!editingTier.min_quantity || editingTier.min_quantity <= 0) {
+      toast.error('A quantidade mínima deve ser maior que zero');
+      return;
+    }
+
+    if (!editingTier.unit_price || editingTier.unit_price <= 0) {
+      toast.error('O preço unitário deve ser maior que zero');
+      return;
+    }
+
+    if (editingTier.max_quantity !== null && editingTier.max_quantity !== undefined) {
+      if (editingTier.max_quantity <= editingTier.min_quantity) {
+        toast.error('A quantidade máxima deve ser maior que a mínima');
+        return;
+      }
+    }
+
+    if (editingTier.discounted_unit_price) {
+      if (editingTier.discounted_unit_price <= 0) {
+        toast.error('O preço promocional deve ser maior que zero');
+        return;
+      }
+      if (editingTier.discounted_unit_price >= editingTier.unit_price) {
+        toast.error('O preço promocional deve ser menor que o preço normal');
+        return;
+      }
+    }
+
+    const updatedTiers = [...tiers];
+    updatedTiers[editingIndex] = {
+      ...tiers[editingIndex],
+      min_quantity: editingTier.min_quantity,
+      max_quantity: editingTier.max_quantity ?? null,
+      unit_price: editingTier.unit_price,
+      discounted_unit_price: editingTier.discounted_unit_price ?? null
+    };
+
+    console.log('Updating tier at index:', editingIndex);
+    console.log('Updated tier data:', updatedTiers[editingIndex]);
+
+    onChange(updatedTiers);
+    toast.success('Faixa de preço atualizada com sucesso!');
+    handleCancelEdit();
+  }, [editingIndex, editingTier, tiers, onChange, handleCancelEdit]);
+
   const calculateSavings = (unitPrice: number, discountedPrice?: number | null) => {
     if (!discountedPrice) return null;
     const savings = unitPrice - discountedPrice;
@@ -314,6 +379,88 @@ export function TieredPricingManager({
                   {[...tiers].sort((a, b) => a.min_quantity - b.min_quantity).map((tier, index) => {
                     const savings = calculateSavings(tier.unit_price, tier.discounted_unit_price);
                     const hasError = errors.some(e => e.tierIndex === index);
+                    const isEditing = editingIndex === index;
+
+                    if (isEditing && editingTier) {
+                      return (
+                        <TableRow key={index} className="bg-blue-50 dark:bg-blue-950/20">
+                          <TableCell>
+                            <div className="flex gap-2">
+                              <Input
+                                type="number"
+                                min={1}
+                                value={editingTier.min_quantity || ''}
+                                onChange={(e) => setEditingTier({
+                                  ...editingTier,
+                                  min_quantity: parseInt(e.target.value) || 1
+                                })}
+                                className="w-20"
+                              />
+                              <span className="self-center">-</span>
+                              <Input
+                                type="number"
+                                min={editingTier.min_quantity || 1}
+                                value={editingTier.max_quantity || ''}
+                                onChange={(e) => setEditingTier({
+                                  ...editingTier,
+                                  max_quantity: e.target.value ? parseInt(e.target.value) : null
+                                })}
+                                placeholder="∞"
+                                className="w-20"
+                              />
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <NumericFormat
+                              {...numberFormatConfig}
+                              value={editingTier.unit_price || ''}
+                              onValueChange={(values) => {
+                                setEditingTier({
+                                  ...editingTier,
+                                  unit_price: parseFloat(values.value) || 0
+                                });
+                              }}
+                              className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <NumericFormat
+                              {...numberFormatConfig}
+                              value={editingTier.discounted_unit_price || ''}
+                              onValueChange={(values) => {
+                                setEditingTier({
+                                  ...editingTier,
+                                  discounted_unit_price: values.value ? parseFloat(values.value) : null
+                                });
+                              }}
+                              placeholder="Opcional"
+                              className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-xs text-muted-foreground">-</span>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={handleSaveEdit}
+                              >
+                                Salvar
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={handleCancelEdit}
+                              >
+                                Cancelar
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    }
 
                     return (
                       <TableRow key={index} className={hasError ? 'bg-red-50 dark:bg-red-950/20' : ''}>
@@ -362,6 +509,20 @@ export function TieredPricingManager({
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-2">
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleStartEdit(index)}
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Editar faixa</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger asChild>
