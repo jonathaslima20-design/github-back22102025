@@ -225,7 +225,11 @@ export default function EditProductPage() {
   };
 
   const onSubmit = async (data: ProductFormData) => {
-    if (!user?.id || !id) return;
+    console.log('onSubmit called with data:', data);
+    if (!user?.id || !id) {
+      console.error('Missing user ID or product ID');
+      return;
+    }
 
     if (pricingMode === 'tiered' && priceTiers.length === 0) {
       toast.error('Adicione pelo menos um nível de preço');
@@ -378,7 +382,10 @@ export default function EditProductPage() {
       </div>
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={form.handleSubmit(onSubmit, (errors) => {
+          console.error('Form validation errors:', errors);
+          toast.error('Por favor, corrija os erros no formulário');
+        })} className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>Informações Básicas</CardTitle>
