@@ -690,11 +690,6 @@ export default function EditProductPage() {
 
         const sortedTiers = [...priceTiers].sort((a, b) => a.min_quantity - b.min_quantity);
 
-        if (sortedTiers.length > 0 && sortedTiers[0].min_quantity !== 1) {
-          sortedTiers[0].min_quantity = 1;
-          toast.warning('A primeira faixa foi ajustada para começar na quantidade 1');
-        }
-
         const tiersToUpdate = sortedTiers.map(tier => ({
           min_quantity: tier.min_quantity,
           max_quantity: tier.max_quantity,

@@ -96,14 +96,6 @@ export function TieredPricingManager({
 
     const sortedTiers = [...tiersToValidate].sort((a, b) => a.min_quantity - b.min_quantity);
 
-    if (sortedTiers[0].min_quantity !== 1) {
-      errors.push({
-        type: 'invalid_min',
-        message: 'A primeira faixa deve começar na quantidade 1',
-        tierIndex: 0
-      });
-    }
-
     for (let i = 0; i < sortedTiers.length; i++) {
       const tier = sortedTiers[i];
 
@@ -162,16 +154,6 @@ export function TieredPricingManager({
         }
       }
 
-      if (i < sortedTiers.length - 1 && tier.max_quantity !== null) {
-        const nextTier = sortedTiers[i + 1];
-        if (nextTier.min_quantity !== tier.max_quantity + 1) {
-          errors.push({
-            type: 'gap',
-            message: `Gap detectado entre faixa ${i + 1} (termina em ${tier.max_quantity}) e faixa ${i + 2} (começa em ${nextTier.min_quantity})`,
-            tierIndex: i
-          });
-        }
-      }
     }
 
     const nullMaxCount = sortedTiers.filter(t => t.max_quantity === null).length;
@@ -193,8 +175,8 @@ export function TieredPricingManager({
   }, [tiers]);
 
   const handleAddTier = useCallback(() => {
-    if (!newTier.min_quantity) {
-      toast.error('A quantidade mínima é obrigatória');
+    if (!newTier.min_quantity || newTier.min_quantity <= 0) {
+      toast.error('A quantidade mínima deve ser maior que zero');
       return;
     }
 
@@ -203,11 +185,7 @@ export function TieredPricingManager({
       return;
     }
 
-    let minQuantity = newTier.min_quantity;
-    if (tiers.length === 0 && minQuantity !== 1) {
-      minQuantity = 1;
-      toast.info('A primeira faixa foi ajustada para começar na quantidade 1');
-    }
+    const minQuantity = newTier.min_quantity;
 
     const tierToAdd: PriceTier = {
       min_quantity: minQuantity,
@@ -348,10 +326,10 @@ export function TieredPricingManager({
             Defina diferentes preços por unidade baseados na quantidade comprada. Exemplo: de 1-10 unidades por R$ 100, de 11-50 por R$ 90, acima de 50 por R$ 80.
           </p>
           <ul className="list-disc list-inside space-y-1 text-blue-700 dark:text-blue-300">
-            <li>As faixas devem começar em quantidade 1</li>
-            <li>Não pode haver lacunas entre as faixas</li>
+            <li>As faixas podem começar em qualquer quantidade (ex: 10-30, 50-100)</li>
             <li>Não pode haver sobreposição de quantidades</li>
             <li>Apenas a última faixa pode ter quantidade ilimitada</li>
+            <li>Você pode ter faixas descontínuas (ex: 1-10, 50-100)</li>
           </ul>
         </div>
       </div>
