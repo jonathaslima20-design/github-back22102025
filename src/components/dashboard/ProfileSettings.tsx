@@ -23,12 +23,12 @@ import { cleanWhatsAppNumber, formatWhatsAppForDisplay } from '@/lib/utils';
 import { getErrorMessage } from '@/lib/errorMessages';
 
 // Import refactored components
-import { AvatarSection } from './Profile/AvatarSection';
-import { CoverImageSection } from './Profile/CoverImageSection';
-import { BasicInfoForm } from './Profile/BasicInfoForm';
-import { PasswordChangeDialog } from './Profile/PasswordChangeDialog';
-import { ThemeToggleSection } from './Profile/ThemeToggleSection';
-import { PromotionalBannerSection } from './Profile/PromotionalBannerSection';
+import { AvatarSection } from '../Profile/AvatarSection';
+import { CoverImageSection } from '../Profile/CoverImageSection';
+import { BasicInfoForm } from '../Profile/BasicInfoForm';
+import { PasswordChangeDialog } from '../Profile/PasswordChangeDialog';
+import { ThemeToggleSection } from '../Profile/ThemeToggleSection';
+import { PromotionalBannerSection } from '../Profile/PromotionalBannerSection';
 
 const formSchema = z.object({
   name: z.string().min(2, 'Nome muito curto'),
