@@ -235,9 +235,16 @@ export default function ProductDetailsPage() {
 
   // Determinar preços e desconto
   const hasDiscount = product.discounted_price && product.discounted_price < product.price;
-  const displayPrice = hasDiscount ? product.discounted_price : product.price;
+
+  // Check if we should use tiered pricing minimum price
+  const minimumTieredPrice = priceTiers.length > 0 && product.has_tiered_pricing
+    ? Math.min(...priceTiers.map(tier => tier.discounted_unit_price || tier.unit_price))
+    : null;
+
+  const isTieredPricing = product.has_tiered_pricing && minimumTieredPrice && minimumTieredPrice > 0;
+  const displayPrice = isTieredPricing ? minimumTieredPrice : (hasDiscount ? product.discounted_price : product.price);
   const originalPrice = hasDiscount ? product.price : null;
-  const discountPercentage = hasDiscount 
+  const discountPercentage = hasDiscount
     ? Math.round(((product.price - product.discounted_price) / product.price) * 100)
     : null;
 
@@ -316,7 +323,27 @@ export default function ProductDetailsPage() {
               
               {/* Price information */}
               <div className="mt-6 mb-8">
-                {hasDiscount ? (
+                {loadingTiers && product.has_tiered_pricing ? (
+                  <div className="text-lg font-bold text-muted-foreground animate-pulse">
+                    Carregando preços...
+                  </div>
+                ) : isTieredPricing ? (
+                  <div className="space-y-2">
+                    {hasDiscount && originalPrice && originalPrice > 0 && (
+                      <div className="text-lg text-muted-foreground line-through">
+                        {formatCurrencyI18n(originalPrice, currency, language)}
+                      </div>
+                    )}
+                    <div className="text-3xl font-bold text-primary">
+                      {t('product.starting_from')} {formatCurrencyI18n(minimumTieredPrice!, currency, language)}
+                    </div>
+                    {product.short_description && (
+                      <div className="text-sm text-green-600 font-medium">
+                        {product.short_description}
+                      </div>
+                    )}
+                  </div>
+                ) : hasDiscount ? (
                   <div className="space-y-2">
                     {/* Original price with strikethrough */}
                     <div className="text-lg text-muted-foreground line-through">
