@@ -6,7 +6,7 @@ import { Plus } from 'lucide-react';
 import { ListingsHeader } from '@/components/dashboard/ListingsHeader';
 import { ListingsFilters } from '@/components/dashboard/ListingsFilters';
 import { ListingsStatusBar } from '@/components/dashboard/ListingsStatusBar';
-import { EnhancedProductGrid } from '@/components/dashboard/EnhancedProductGrid';
+import { ProductGrid } from '@/components/dashboard/ProductGrid';
 import { BulkActionsPanel } from '@/components/dashboard/BulkActionsPanel';
 import { useProductListManagement } from '@/hooks/useProductListManagement';
 
@@ -89,22 +89,17 @@ export default function ListingsPage() {
         />
       )}
 
-      <EnhancedProductGrid
+      <ProductGrid
         products={filteredProducts}
-        loading={loading}
-        viewMode={viewMode}
-        reorderMode={isReorderModeActive}
-        selectedProducts={selectedProducts}
-        onSelectionChange={handleSelectProduct}
-        onSelectAll={handleSelectAll}
-        onReorder={handleDragEnd}
-        onToggleVisibility={toggleProductVisibility}
-        onRefresh={refreshProducts}
-        updatingProductId={updatingProductId}
+        isDragMode={isReorderModeActive}
         reordering={reordering}
-        canReorder={canReorder}
-        allSelected={allSelected}
-        someSelected={someSelected}
+        bulkActionLoading={bulkActionLoading}
+        selectedProducts={selectedProducts}
+        updatingProductId={updatingProductId}
+        user={user}
+        onSelectProduct={handleSelectProduct}
+        onToggleVisibility={toggleProductVisibility}
+        onDragEnd={handleDragEnd}
       />
 
       {!loading && filteredProducts.length === 0 && (
