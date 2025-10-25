@@ -1,11 +1,10 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CustomColorSelector } from '@/components/ui/custom-color-selector';
-import { cn } from '@/lib/utils';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface SizesColorsSelectorProps {
   colors: string[];
@@ -26,8 +25,10 @@ export function SizesColorsSelector({
   userId,
 }: SizesColorsSelectorProps) {
   const [colorsExpanded, setColorsExpanded] = useState(false);
-  const [sizesExpanded, setSizesExpanded] = useState(false);
-  const [activeSizeType, setActiveSizeType] = useState<'apparel' | 'shoes' | 'custom'>('apparel');
+  const [sizesExpanded, setSizesExpanded] = useState(true);
+  const [apparelExpanded, setApparelExpanded] = useState(true);
+  const [shoesExpanded, setShoesExpanded] = useState(false);
+  const [customExpanded, setCustomExpanded] = useState(false);
   const [customSize, setCustomSize] = useState('');
 
   const handleSizeToggle = (size: string) => {
@@ -38,13 +39,9 @@ export function SizesColorsSelector({
     }
   };
 
-  const handleRemoveSize = (size: string) => {
-    onSizesChange(sizes.filter((s) => s !== size));
-  };
-
   const handleAddCustomSize = () => {
     const trimmed = customSize.trim();
-    if (trimmed && !sizes.includes(trimmed)) {
+    if (trimmed && !sizes.includes(trimmed) && sizes.length < 10) {
       onSizesChange([...sizes, trimmed]);
       setCustomSize('');
     }
@@ -59,177 +56,176 @@ export function SizesColorsSelector({
 
   return (
     <div className="space-y-4">
-      <div className="border rounded-lg">
-        <button
-          type="button"
-          onClick={() => setColorsExpanded(!colorsExpanded)}
-          className="w-full flex items-center justify-between p-4 hover:bg-accent/50 transition-colors"
-        >
-          <div className="flex items-center gap-2">
-            <Label className="text-base font-medium cursor-pointer">
-              Cores Disponíveis (Opcional)
-            </Label>
-            {colors.length > 0 && (
-              <Badge variant="secondary" className="ml-2">
-                {colors.length}
-              </Badge>
-            )}
-          </div>
-          {colorsExpanded ? (
-            <ChevronUp className="h-5 w-5 text-muted-foreground" />
-          ) : (
-            <ChevronDown className="h-5 w-5 text-muted-foreground" />
-          )}
-        </button>
-
-        {colorsExpanded && (
-          <div className="p-4 border-t">
-            <CustomColorSelector
-              value={colors}
-              onChange={onColorsChange}
-              userId={userId}
-            />
-          </div>
-        )}
-      </div>
-
-      <div className="border rounded-lg">
-        <button
-          type="button"
-          onClick={() => setSizesExpanded(!sizesExpanded)}
-          className="w-full flex items-center justify-between p-4 hover:bg-accent/50 transition-colors"
-        >
-          <div className="flex items-center gap-2">
-            <Label className="text-base font-medium cursor-pointer">Tamanhos</Label>
-            {sizes.length > 0 && (
-              <Badge variant="secondary" className="ml-2">
-                {sizes.length}
-              </Badge>
-            )}
-          </div>
-          {sizesExpanded ? (
-            <ChevronUp className="h-5 w-5 text-muted-foreground" />
-          ) : (
-            <ChevronDown className="h-5 w-5 text-muted-foreground" />
-          )}
-        </button>
-
-        {sizesExpanded && (
-          <div className="p-4 border-t space-y-4">
-            {sizes.length > 0 && (
-              <div className="space-y-2">
-                <Label className="text-sm">Tamanhos Selecionados</Label>
-                <div className="flex flex-wrap gap-2">
-                  {sizes.map((size) => (
-                    <Badge key={size} variant="secondary" className="px-3 py-1">
-                      {size}
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveSize(size)}
-                        className="ml-2 hover:text-destructive"
-                      >
-                        ×
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="flex gap-2 border-b pb-3">
-              <Button
-                type="button"
-                variant={activeSizeType === 'apparel' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setActiveSizeType('apparel')}
-              >
-                Vestuário
-              </Button>
-              <Button
-                type="button"
-                variant={activeSizeType === 'shoes' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setActiveSizeType('shoes')}
-              >
-                Calçados
-              </Button>
-              <Button
-                type="button"
-                variant={activeSizeType === 'custom' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setActiveSizeType('custom')}
-              >
-                Personalizado
-              </Button>
+      <Collapsible open={colorsExpanded} onOpenChange={setColorsExpanded}>
+        <div className="border rounded-lg">
+          <CollapsibleTrigger asChild>
+            <button
+              type="button"
+              className="w-full flex items-center justify-between p-4 hover:bg-accent/50 transition-colors"
+            >
+              <Label className="text-base font-medium cursor-pointer">
+                Cores Disponíveis (opcional)
+              </Label>
+              {colorsExpanded ? (
+                <ChevronUp className="h-5 w-5 text-muted-foreground" />
+              ) : (
+                <ChevronDown className="h-5 w-5 text-muted-foreground" />
+              )}
+            </button>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="p-4 border-t">
+              <CustomColorSelector
+                value={colors}
+                onChange={onColorsChange}
+                userId={userId}
+              />
             </div>
+          </CollapsibleContent>
+        </div>
+      </Collapsible>
 
-            {activeSizeType === 'apparel' && (
-              <div className="space-y-2">
-                <Label className="text-sm">Tamanhos de Vestuário</Label>
-                <div className="flex flex-wrap gap-2">
-                  {APPAREL_SIZES.map((size) => (
-                    <Button
-                      key={size}
+      <Collapsible open={sizesExpanded} onOpenChange={setSizesExpanded}>
+        <div className="border rounded-lg">
+          <CollapsibleTrigger asChild>
+            <button
+              type="button"
+              className="w-full flex items-center justify-between p-4 hover:bg-accent/50 transition-colors"
+            >
+              <Label className="text-base font-medium cursor-pointer">
+                Tamanhos (opcional)
+              </Label>
+              {sizesExpanded ? (
+                <ChevronUp className="h-5 w-5 text-muted-foreground" />
+              ) : (
+                <ChevronDown className="h-5 w-5 text-muted-foreground" />
+              )}
+            </button>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="p-4 border-t space-y-4">
+              <Collapsible open={apparelExpanded} onOpenChange={setApparelExpanded}>
+                <div className="space-y-3">
+                  <CollapsibleTrigger asChild>
+                    <button
                       type="button"
-                      variant={sizes.includes(size) ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => handleSizeToggle(size)}
-                      className="w-16"
+                      className="w-full flex items-center justify-between text-sm font-medium hover:text-foreground/80 transition-colors"
                     >
-                      {size}
-                    </Button>
-                  ))}
+                      <span>Tamanhos de Vestuário</span>
+                      {apparelExpanded ? (
+                        <ChevronUp className="h-4 w-4" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4" />
+                      )}
+                    </button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="flex flex-wrap gap-2 pt-2">
+                      {APPAREL_SIZES.map((size) => (
+                        <Button
+                          key={size}
+                          type="button"
+                          variant={sizes.includes(size) ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => handleSizeToggle(size)}
+                          className="h-9 min-w-[3rem]"
+                        >
+                          {size}
+                        </Button>
+                      ))}
+                    </div>
+                  </CollapsibleContent>
                 </div>
-              </div>
-            )}
+              </Collapsible>
 
-            {activeSizeType === 'shoes' && (
-              <div className="space-y-2">
-                <Label className="text-sm">Tamanhos de Calçados (17-43)</Label>
-                <div className="grid grid-cols-7 gap-2 max-h-64 overflow-y-auto">
-                  {SHOE_SIZES.map((size) => (
-                    <Button
-                      key={size}
+              <Collapsible open={shoesExpanded} onOpenChange={setShoesExpanded}>
+                <div className="space-y-3">
+                  <CollapsibleTrigger asChild>
+                    <button
                       type="button"
-                      variant={sizes.includes(size) ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => handleSizeToggle(size)}
-                      className="h-9"
+                      className="w-full flex items-center justify-between text-sm font-medium hover:text-foreground/80 transition-colors"
                     >
-                      {size}
-                    </Button>
-                  ))}
+                      <span>Numeração de Calçados</span>
+                      {shoesExpanded ? (
+                        <ChevronUp className="h-4 w-4" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4" />
+                      )}
+                    </button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="pt-2 space-y-2">
+                      <p className="text-xs text-muted-foreground">
+                        Numeração de Calçados (17 - 43)
+                      </p>
+                      <div className="grid grid-cols-6 gap-2">
+                        {SHOE_SIZES.map((size) => (
+                          <Button
+                            key={size}
+                            type="button"
+                            variant={sizes.includes(size) ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => handleSizeToggle(size)}
+                            className="h-9"
+                          >
+                            {size}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  </CollapsibleContent>
                 </div>
-              </div>
-            )}
+              </Collapsible>
 
-            {activeSizeType === 'custom' && (
-              <div className="space-y-2">
-                <Label className="text-sm">Tamanhos Personalizados</Label>
-                <div className="flex gap-2">
-                  <Input
-                    value={customSize}
-                    onChange={(e) => setCustomSize(e.target.value)}
-                    onKeyDown={handleCustomSizeKeyDown}
-                    placeholder="Digite um tamanho personalizado..."
-                    className="flex-1"
-                  />
-                  <Button
-                    type="button"
-                    onClick={handleAddCustomSize}
-                    disabled={!customSize.trim()}
-                  >
-                    Adicionar
-                  </Button>
+              <Collapsible open={customExpanded} onOpenChange={setCustomExpanded}>
+                <div className="space-y-3">
+                  <CollapsibleTrigger asChild>
+                    <button
+                      type="button"
+                      className="w-full flex items-center justify-between text-sm font-medium hover:text-foreground/80 transition-colors"
+                    >
+                      <span>Tamanhos Personalizados</span>
+                      {customExpanded ? (
+                        <ChevronUp className="h-4 w-4" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4" />
+                      )}
+                    </button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="pt-2 space-y-3">
+                      <div className="flex gap-2">
+                        <Input
+                          value={customSize}
+                          onChange={(e) => setCustomSize(e.target.value)}
+                          onKeyDown={handleCustomSizeKeyDown}
+                          placeholder="Digite um tamanho personal"
+                          className="flex-1"
+                        />
+                        <Button
+                          type="button"
+                          onClick={handleAddCustomSize}
+                          disabled={!customSize.trim() || sizes.length >= 10}
+                          size="sm"
+                          className="px-3"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {sizes.length}/10 tamanhos adicionados
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Digite tamanhos personalizados como "XS", "4XL", etc. Os tamanhos criados serão salvos para uso futuro.
+                      </p>
+                    </div>
+                  </CollapsibleContent>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Exemplos: 2XL, 3XL, P/M, Único, etc.
-                </p>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+              </Collapsible>
+            </div>
+          </CollapsibleContent>
+        </div>
+      </Collapsible>
     </div>
   );
 }
