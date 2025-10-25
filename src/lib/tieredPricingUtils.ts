@@ -16,7 +16,7 @@ export async function fetchProductPriceTiers(productId: string): Promise<PriceTi
     .from('product_price_tiers')
     .select('*')
     .eq('product_id', productId)
-    .order('min_quantity', { ascending: true });
+    .order('quantity', { ascending: true });
 
   if (error) {
     console.error('Error fetching price tiers:', error);
@@ -52,14 +52,10 @@ export function calculateApplicablePrice(
     };
   }
 
-  const sortedTiers = [...tiers].sort((a, b) => a.min_quantity - b.min_quantity);
+  const sortedTiers = [...tiers].sort((a, b) => a.quantity - b.quantity);
 
   const applicableTier = sortedTiers
-    .filter(tier => {
-      const meetsMin = quantity >= tier.min_quantity;
-      const meetsMax = tier.max_quantity === null || quantity <= tier.max_quantity;
-      return meetsMin && meetsMax;
-    })
+    .filter(tier => quantity >= tier.quantity)
     .pop();
 
   const unitPrice = applicableTier
@@ -72,17 +68,17 @@ export function calculateApplicablePrice(
   const baseTotalPrice = baseUnitPrice * quantity;
   const savings = baseTotalPrice - totalPrice;
 
-  const nextTier = sortedTiers.find(tier => tier.min_quantity > quantity) || null;
+  const nextTier = sortedTiers.find(tier => tier.quantity > quantity) || null;
 
   let nextTierSavings = 0;
   let unitsToNextTier = 0;
 
   if (nextTier) {
     const nextTierUnitPrice = nextTier.discounted_unit_price || nextTier.unit_price;
-    const nextTierTotalPrice = nextTierUnitPrice * nextTier.min_quantity;
-    const baseTotalAtNextTier = baseUnitPrice * nextTier.min_quantity;
+    const nextTierTotalPrice = nextTierUnitPrice * nextTier.quantity;
+    const baseTotalAtNextTier = baseUnitPrice * nextTier.quantity;
     nextTierSavings = baseTotalAtNextTier - nextTierTotalPrice;
-    unitsToNextTier = nextTier.min_quantity - quantity;
+    unitsToNextTier = nextTier.quantity - quantity;
   }
 
   return {
@@ -97,13 +93,7 @@ export function calculateApplicablePrice(
 }
 
 export function formatPriceTierRange(tier: PriceTier): string {
-  if (tier.max_quantity === null) {
-    return `${tier.min_quantity}+ unidades`;
-  }
-  if (tier.min_quantity === tier.max_quantity) {
-    return `${tier.min_quantity} unidade${tier.min_quantity > 1 ? 's' : ''}`;
-  }
-  return `${tier.min_quantity} - ${tier.max_quantity} unidades`;
+  return `${tier.quantity} unidade${tier.quantity > 1 ? 's' : ''}`;
 }
 
 export function getBestValueTier(tiers: PriceTier[]): PriceTier | null {
@@ -118,7 +108,7 @@ export function getBestValueTier(tiers: PriceTier[]): PriceTier | null {
 
 export async function updatePriceTier(
   tierId: string,
-  updates: Partial<Pick<PriceTier, 'min_quantity' | 'max_quantity' | 'unit_price' | 'discounted_unit_price'>>
+  updates: Partial<Pick<PriceTier, 'quantity' | 'unit_price' | 'discounted_unit_price'>>
 ): Promise<PriceTier | null> {
   const { data, error } = await supabase
     .from('product_price_tiers')
@@ -157,8 +147,7 @@ export async function createPriceTier(
     .from('product_price_tiers')
     .insert({
       product_id: productId,
-      min_quantity: tier.min_quantity,
-      max_quantity: tier.max_quantity,
+      quantity: tier.quantity,
       unit_price: tier.unit_price,
       discounted_unit_price: tier.discounted_unit_price
     })

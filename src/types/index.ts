@@ -46,8 +46,7 @@ export interface ProductImage {
 export interface PriceTier {
   id?: string;
   product_id?: string;
-  min_quantity: number;
-  max_quantity: number | null;
+  quantity: number;
   unit_price: number;
   discounted_unit_price?: number | null;
   created_at?: string;
@@ -197,8 +196,7 @@ export interface VariantDistribution {
   applied_tier_price: number;
   metadata?: {
     tier_id?: string;
-    min_quantity?: number;
-    max_quantity?: number | null;
+    quantity?: number;
     original_price?: number;
   };
   created_at?: string;

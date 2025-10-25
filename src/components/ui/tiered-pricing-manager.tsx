@@ -36,14 +36,13 @@ import { toast } from 'sonner';
 
 export interface PriceTier {
   id?: string;
-  min_quantity: number;
-  max_quantity: number | null;
+  quantity: number;
   unit_price: number;
   discounted_unit_price?: number | null;
 }
 
 interface ValidationError {
-  type: 'overlap' | 'gap' | 'invalid_min' | 'invalid_max' | 'invalid_price' | 'invalid_discount';
+  type: 'duplicate' | 'invalid_quantity' | 'invalid_price' | 'invalid_discount';
   message: string;
   tierIndex?: number;
 }
@@ -68,8 +67,7 @@ export function TieredPricingManager({
   const [editingTier, setEditingTier] = useState<Partial<PriceTier> | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [newTier, setNewTier] = useState<Partial<PriceTier>>({
-    min_quantity: 1,
-    max_quantity: null,
+    quantity: 1,
     unit_price: 0,
     discounted_unit_price: null
   });
@@ -94,26 +92,27 @@ export function TieredPricingManager({
       return errors;
     }
 
-    const sortedTiers = [...tiersToValidate].sort((a, b) => a.min_quantity - b.min_quantity);
+    const quantitySet = new Set<number>();
 
-    for (let i = 0; i < sortedTiers.length; i++) {
-      const tier = sortedTiers[i];
+    for (let i = 0; i < tiersToValidate.length; i++) {
+      const tier = tiersToValidate[i];
 
-      if (tier.min_quantity <= 0) {
+      if (tier.quantity <= 0) {
         errors.push({
-          type: 'invalid_min',
-          message: `Faixa ${i + 1}: Quantidade mínima deve ser maior que 0`,
+          type: 'invalid_quantity',
+          message: `Faixa ${i + 1}: Quantidade deve ser maior que 0`,
           tierIndex: i
         });
       }
 
-      if (tier.max_quantity !== null && tier.max_quantity <= tier.min_quantity) {
+      if (quantitySet.has(tier.quantity)) {
         errors.push({
-          type: 'invalid_max',
-          message: `Faixa ${i + 1}: Quantidade máxima deve ser maior que a mínima`,
+          type: 'duplicate',
+          message: `Faixa ${i + 1}: Quantidade ${tier.quantity} duplicada`,
           tierIndex: i
         });
       }
+      quantitySet.add(tier.quantity);
 
       if (tier.unit_price <= 0) {
         errors.push({
@@ -139,29 +138,6 @@ export function TieredPricingManager({
           });
         }
       }
-
-      for (let j = i + 1; j < sortedTiers.length; j++) {
-        const otherTier = sortedTiers[j];
-        const tierMax = tier.max_quantity ?? Infinity;
-        const otherMax = otherTier.max_quantity ?? Infinity;
-
-        if (tier.min_quantity <= otherMax && tierMax >= otherTier.min_quantity) {
-          errors.push({
-            type: 'overlap',
-            message: `Faixas ${i + 1} e ${j + 1}: Sobreposição detectada nas quantidades`,
-            tierIndex: i
-          });
-        }
-      }
-
-    }
-
-    const nullMaxCount = sortedTiers.filter(t => t.max_quantity === null).length;
-    if (nullMaxCount > 1) {
-      errors.push({
-        type: 'invalid_max',
-        message: 'Apenas a última faixa pode ter quantidade ilimitada'
-      });
     }
 
     return errors;
@@ -175,8 +151,8 @@ export function TieredPricingManager({
   }, [tiers]);
 
   const handleAddTier = useCallback(() => {
-    if (!newTier.min_quantity || newTier.min_quantity <= 0) {
-      toast.error('A quantidade mínima deve ser maior que zero');
+    if (!newTier.quantity || newTier.quantity <= 0) {
+      toast.error('A quantidade deve ser maior que zero');
       return;
     }
 
@@ -185,11 +161,14 @@ export function TieredPricingManager({
       return;
     }
 
-    const minQuantity = newTier.min_quantity;
+    const quantityExists = tiers.some(t => t.quantity === newTier.quantity);
+    if (quantityExists) {
+      toast.error(`Já existe uma faixa para ${newTier.quantity} unidades`);
+      return;
+    }
 
     const tierToAdd: PriceTier = {
-      min_quantity: minQuantity,
-      max_quantity: newTier.max_quantity ?? null,
+      quantity: newTier.quantity,
       unit_price: newTier.unit_price,
       discounted_unit_price: newTier.discounted_unit_price ?? null
     };
@@ -202,8 +181,7 @@ export function TieredPricingManager({
     toast.success('Faixa de preço adicionada. Clique em "Salvar Alterações" no final da página para confirmar.');
 
     setNewTier({
-      min_quantity: (newTier.max_quantity ?? minQuantity) + 1,
-      max_quantity: null,
+      quantity: (newTier.quantity || 1) + 10,
       unit_price: 0,
       discounted_unit_price: null
     });
@@ -230,8 +208,7 @@ export function TieredPricingManager({
     const tier = tiers[index];
     setEditingIndex(index);
     setEditingTier({
-      min_quantity: tier.min_quantity,
-      max_quantity: tier.max_quantity,
+      quantity: tier.quantity,
       unit_price: tier.unit_price,
       discounted_unit_price: tier.discounted_unit_price
     });
@@ -245,8 +222,8 @@ export function TieredPricingManager({
   const handleSaveEdit = useCallback(() => {
     if (editingIndex === null || !editingTier) return;
 
-    if (!editingTier.min_quantity || editingTier.min_quantity <= 0) {
-      toast.error('A quantidade mínima deve ser maior que zero');
+    if (!editingTier.quantity || editingTier.quantity <= 0) {
+      toast.error('A quantidade deve ser maior que zero');
       return;
     }
 
@@ -255,11 +232,12 @@ export function TieredPricingManager({
       return;
     }
 
-    if (editingTier.max_quantity !== null && editingTier.max_quantity !== undefined) {
-      if (editingTier.max_quantity <= editingTier.min_quantity) {
-        toast.error('A quantidade máxima deve ser maior que a mínima');
-        return;
-      }
+    const quantityExists = tiers.some((t, idx) =>
+      idx !== editingIndex && t.quantity === editingTier.quantity
+    );
+    if (quantityExists) {
+      toast.error(`Já existe uma faixa para ${editingTier.quantity} unidades`);
+      return;
     }
 
     if (editingTier.discounted_unit_price) {
@@ -276,8 +254,7 @@ export function TieredPricingManager({
     const updatedTiers = [...tiers];
     updatedTiers[editingIndex] = {
       ...tiers[editingIndex],
-      min_quantity: editingTier.min_quantity,
-      max_quantity: editingTier.max_quantity ?? null,
+      quantity: editingTier.quantity,
       unit_price: editingTier.unit_price,
       discounted_unit_price: editingTier.discounted_unit_price ?? null
     };
@@ -297,16 +274,6 @@ export function TieredPricingManager({
     return { savings, percentage };
   };
 
-  const formatQuantityRange = (min: number, max: number | null) => {
-    if (max === null) {
-      return `${min}+`;
-    }
-    if (min === max) {
-      return `${min}`;
-    }
-    return `${min} - ${max}`;
-  };
-
   return (
     <div className="space-y-6">
       <Alert className="bg-yellow-50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-900">
@@ -320,16 +287,16 @@ export function TieredPricingManager({
         <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
         <div className="space-y-2 text-sm">
           <p className="font-medium text-blue-900 dark:text-blue-100">
-            Como funciona o preço escalonado?
+            Como funciona o preço por quantidade?
           </p>
           <p className="text-blue-800 dark:text-blue-200">
-            Defina diferentes preços por unidade baseados na quantidade comprada. Exemplo: de 1-10 unidades por R$ 100, de 11-50 por R$ 90, acima de 50 por R$ 80.
+            Defina preços específicos para quantidades exatas. Exemplo: 10 unidades por R$ 100, 50 unidades por R$ 90, 100 unidades por R$ 80.
           </p>
           <ul className="list-disc list-inside space-y-1 text-blue-700 dark:text-blue-300">
-            <li>As faixas podem começar em qualquer quantidade (ex: 10-30, 50-100)</li>
-            <li>Não pode haver sobreposição de quantidades</li>
-            <li>Apenas a última faixa pode ter quantidade ilimitada</li>
-            <li>Você pode ter faixas descontínuas (ex: 1-10, 50-100)</li>
+            <li>Cada faixa representa uma quantidade específica (ex: 10, 50, 100)</li>
+            <li>Compradores que comprarem essa quantidade exata ou mais receberão esse preço</li>
+            <li>Não pode haver quantidades duplicadas</li>
+            <li>Quanto maior a quantidade, geralmente menor o preço unitário</li>
           </ul>
         </div>
       </div>
@@ -356,7 +323,7 @@ export function TieredPricingManager({
             <div>
               <h3 className="text-lg font-semibold mb-2">Faixas de Preço Cadastradas</h3>
               <p className="text-sm text-muted-foreground">
-                Visualize e gerencie suas faixas de preço por quantidade
+                Visualize e gerencie seus preços por quantidade
               </p>
             </div>
 
@@ -372,7 +339,7 @@ export function TieredPricingManager({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {[...tiers].sort((a, b) => a.min_quantity - b.min_quantity).map((tier, index) => {
+                  {[...tiers].sort((a, b) => a.quantity - b.quantity).map((tier, index) => {
                     const savings = calculateSavings(tier.unit_price, tier.discounted_unit_price);
                     const hasError = errors.some(e => e.tierIndex === index);
                     const isEditing = editingIndex === index;
@@ -381,30 +348,17 @@ export function TieredPricingManager({
                       return (
                         <TableRow key={index} className="bg-blue-50 dark:bg-blue-950/20">
                           <TableCell>
-                            <div className="flex gap-2">
-                              <Input
-                                type="number"
-                                min={1}
-                                value={editingTier.min_quantity || ''}
-                                onChange={(e) => setEditingTier({
-                                  ...editingTier,
-                                  min_quantity: parseInt(e.target.value) || 1
-                                })}
-                                className="w-20"
-                              />
-                              <span className="self-center">-</span>
-                              <Input
-                                type="number"
-                                min={editingTier.min_quantity || 1}
-                                value={editingTier.max_quantity || ''}
-                                onChange={(e) => setEditingTier({
-                                  ...editingTier,
-                                  max_quantity: e.target.value ? parseInt(e.target.value) : null
-                                })}
-                                placeholder="∞"
-                                className="w-20"
-                              />
-                            </div>
+                            <Input
+                              type="number"
+                              min={1}
+                              value={editingTier.quantity || ''}
+                              onChange={(e) => setEditingTier({
+                                ...editingTier,
+                                quantity: parseInt(e.target.value) || 1
+                              })}
+                              className="w-24"
+                              placeholder="Ex: 10"
+                            />
                           </TableCell>
                           <TableCell>
                             <NumericFormat
@@ -463,7 +417,7 @@ export function TieredPricingManager({
                         <TableCell className="font-medium">
                           <div className="flex items-center gap-2">
                             <Package className="h-4 w-4 text-muted-foreground" />
-                            {formatQuantityRange(tier.min_quantity, tier.max_quantity)}
+                            {tier.quantity} unidade{tier.quantity > 1 ? 's' : ''}
                           </div>
                         </TableCell>
                         <TableCell>
@@ -569,48 +523,25 @@ export function TieredPricingManager({
       <Card className="p-6">
         <div className="space-y-4">
           <div>
-            <h3 className="text-lg font-semibold mb-2">Adicionar Nova Faixa</h3>
+            <h3 className="text-lg font-semibold mb-2">Adicionar Nova Quantidade</h3>
             <p className="text-sm text-muted-foreground">
-              Preencha os campos abaixo para adicionar uma nova faixa de preço
+              Defina uma quantidade específica e seu preço unitário
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <FormLabel>Quantidade Mínima *</FormLabel>
+              <FormLabel>Quantidade *</FormLabel>
               <Input
                 type="number"
                 min={1}
-                value={newTier.min_quantity || ''}
-                onChange={(e) => setNewTier({ ...newTier, min_quantity: parseInt(e.target.value) || 1 })}
-                placeholder="Ex: 1"
+                value={newTier.quantity || ''}
+                onChange={(e) => setNewTier({ ...newTier, quantity: parseInt(e.target.value) || 1 })}
+                placeholder="Ex: 10, 50, 100"
               />
-            </div>
-
-            <div className="space-y-2">
-              <FormLabel>
-                Quantidade Máxima
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Info className="h-4 w-4 inline ml-1 text-muted-foreground" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      Deixe vazio para quantidade ilimitada (apenas para a última faixa)
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </FormLabel>
-              <Input
-                type="number"
-                min={newTier.min_quantity || 1}
-                value={newTier.max_quantity || ''}
-                onChange={(e) => setNewTier({
-                  ...newTier,
-                  max_quantity: e.target.value ? parseInt(e.target.value) : null
-                })}
-                placeholder="Deixe vazio para ilimitado"
-              />
+              <p className="text-xs text-muted-foreground">
+                Quantidade exata para este preço
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -645,7 +576,7 @@ export function TieredPricingManager({
 
           <Button type="button" onClick={handleAddTier} className="w-full md:w-auto">
             <Plus className="h-4 w-4 mr-2" />
-            Adicionar Faixa
+            Adicionar Quantidade
           </Button>
         </div>
       </Card>

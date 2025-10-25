@@ -27,7 +27,7 @@ export default function TieredPricingTable({
 
   if (!tiers || tiers.length === 0) return null;
 
-  const sortedTiers = [...tiers].sort((a, b) => a.min_quantity - b.min_quantity);
+  const sortedTiers = [...tiers].sort((a, b) => a.quantity - b.quantity);
   const bestValueTier = getBestValueTier(sortedTiers);
   const baseUnitPrice = baseDiscountedPrice || basePrice;
 
@@ -70,9 +70,9 @@ export default function TieredPricingTable({
                 {sortedTiers.map((tier) => {
                   const unitPrice = tier.discounted_unit_price || tier.unit_price;
                   const isBestValue = bestValueTier?.id === tier.id;
-                  const totalAtMinQty = unitPrice * tier.min_quantity;
-                  const baseTotal = baseUnitPrice * tier.min_quantity;
-                  const savings = baseTotal - totalAtMinQty;
+                  const totalAtQty = unitPrice * tier.quantity;
+                  const baseTotal = baseUnitPrice * tier.quantity;
+                  const savings = baseTotal - totalAtQty;
                   const savingsPercentage = calculateSavingsPercentage(baseUnitPrice, unitPrice);
 
                   return (
@@ -106,7 +106,7 @@ export default function TieredPricingTable({
                       </td>
                       <td className="text-right py-3 px-2 hidden sm:table-cell">
                         <span className="text-sm font-medium">
-                          {formatCurrencyI18n(totalAtMinQty, currency, language)}
+                          {formatCurrencyI18n(totalAtQty, currency, language)}
                         </span>
                       </td>
                       <td className="text-right py-3 px-2 hidden md:table-cell">
@@ -177,9 +177,9 @@ export default function TieredPricingTable({
             {calculatorResult.nextTier && calculatorResult.unitsToNextTier > 0 && (
               <div className="p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
                 <p className="text-sm text-blue-800 dark:text-blue-200">
-                  <span className="font-semibold">Dica:</span> Adicione mais{' '}
-                  <span className="font-bold">{calculatorResult.unitsToNextTier}</span>{' '}
-                  {calculatorResult.unitsToNextTier === 1 ? 'unidade' : 'unidades'} para economizar{' '}
+                  <span className="font-semibold">Dica:</span> Compre{' '}
+                  <span className="font-bold">{calculatorResult.nextTier.quantity}</span>{' '}
+                  {calculatorResult.nextTier.quantity === 1 ? 'unidade' : 'unidades'} para economizar adicional{' '}
                   <span className="font-bold">
                     {formatCurrencyI18n(calculatorResult.nextTierSavings, currency, language)}
                   </span>
