@@ -549,58 +549,24 @@ export default function EditProductPage() {
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="featured_offer_price"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Preço Promocional</FormLabel>
-                          <FormControl>
-                            <DiscountPriceInput
-                              value={field.value || 0}
-                              onChange={field.onChange}
-                              originalPrice={form.watch('price')}
-                              placeholder="R$ 0,00"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="featured_offer_installment"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Valor Parcelado</FormLabel>
-                          <FormControl>
-                            <CurrencyInput
-                              value={field.value || 0}
-                              onChange={field.onChange}
-                              placeholder="R$ 0,00"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="featured_offer_description"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Descrição da Oferta</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Ex: 12x sem juros" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
+                  <FormField
+                    control={form.control}
+                    name="featured_offer_price"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Preço Promocional</FormLabel>
+                        <FormControl>
+                          <DiscountPriceInput
+                            value={field.value || 0}
+                            onChange={field.onChange}
+                            originalPrice={form.watch('price')}
+                            placeholder="R$ 0,00"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </>
               ) : (
                 <TieredPricingManager
