@@ -24,6 +24,7 @@ import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { ArrowLeft, Upload, X } from 'lucide-react';
 import { uploadImage } from '@/lib/image';
+import type { PriceTier } from '@/types';
 
 const productSchema = z.object({
   title: z.string().min(1, 'Título é obrigatório'),
@@ -47,13 +48,6 @@ const productSchema = z.object({
 });
 
 type ProductFormData = z.infer<typeof productSchema>;
-
-type PriceTier = {
-  id?: string;
-  quantity: number;
-  unit_price: number;
-  discounted_unit_price: number | null;
-};
 
 type ProductImage = {
   id: string;
@@ -181,7 +175,7 @@ export default function EditProductPage() {
             .from('product_price_tiers')
             .select('*')
             .eq('product_id', id)
-            .order('quantity');
+            .order('min_quantity');
 
           if (tiersError) throw tiersError;
           if (tiers) {
@@ -327,7 +321,8 @@ export default function EditProductPage() {
         if (priceTiers.length > 0) {
           const tierRecords = priceTiers.map(tier => ({
             product_id: id,
-            quantity: tier.quantity,
+            min_quantity: tier.min_quantity,
+            max_quantity: tier.max_quantity,
             unit_price: tier.unit_price,
             discounted_unit_price: tier.discounted_unit_price,
           }));

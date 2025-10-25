@@ -27,6 +27,7 @@ import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { ArrowLeft, Upload, X } from 'lucide-react';
 import { uploadImage } from '@/lib/image';
+import type { PriceTier } from '@/types';
 
 const productSchema = z.object({
   title: z.string().min(1, 'Título é obrigatório'),
@@ -51,13 +52,6 @@ const productSchema = z.object({
 
 type ProductFormData = z.infer<typeof productSchema>;
 
-type PriceTier = {
-  id?: string;
-  quantity: number;
-  unit_price: number;
-  discounted_unit_price: number | null;
-};
-
 export default function CreateProductPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -70,7 +64,7 @@ export default function CreateProductPage() {
   }>>([]);
   const [pricingMode, setPricingMode] = useState<'simple' | 'tiered'>('simple');
   const [priceTiers, setPriceTiers] = useState<PriceTier[]>([
-    { quantity: 1, unit_price: 0, discounted_unit_price: null }
+    { min_quantity: 1, max_quantity: null, unit_price: 0, discounted_unit_price: null }
   ]);
 
   const form = useForm<ProductFormData>({
@@ -169,7 +163,8 @@ export default function CreateProductPage() {
           .filter(url => url !== null)
           .map(url => ({
             product_id: product.id,
-            url: url!,
+            min_quantity: tier.min_quantity,
+            max_quantity: tier.max_quantity,
             is_featured: false,
           }));
 
