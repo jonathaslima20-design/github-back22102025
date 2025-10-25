@@ -52,12 +52,13 @@ export default function ListingsPage() {
   return (
     <div className="container mx-auto p-6 space-y-6">
       <ListingsHeader
-        onCreateNew={() => navigate('/dashboard/products/new')}
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
-        reorderMode={isReorderModeActive}
-        onReorderModeToggle={() => setIsReorderModeActive(!isReorderModeActive)}
         canReorder={canReorder}
+        isReorderModeActive={isReorderModeActive}
+        reordering={reordering}
+        allSelected={allSelected}
+        filteredProductsLength={filteredProducts.length}
+        onToggleReorderMode={() => setIsReorderModeActive(!isReorderModeActive)}
+        onSelectAll={handleSelectAll}
       />
 
       <ListingsFilters
