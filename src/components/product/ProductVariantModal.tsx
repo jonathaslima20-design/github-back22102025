@@ -282,6 +282,7 @@ export default function ProductVariantModal({
 
   // Calculate price with tiered pricing if applicable
   let price = product.discounted_price || product.price;
+  let displayPrice = price;
   let totalPrice = price * quantity;
   let pricingInfo = null;
 
@@ -295,6 +296,12 @@ export default function ProductVariantModal({
     price = result.unitPrice;
     totalPrice = result.totalPrice;
     pricingInfo = result;
+
+    // Find the lowest unit price across all tiers for display
+    const lowestPrice = Math.min(
+      ...priceTiers.map(tier => tier.discounted_unit_price || tier.unit_price)
+    );
+    displayPrice = lowestPrice;
   }
 
   // If price is still 0 or undefined and we have tiered pricing, use the minimum tier price
@@ -331,7 +338,7 @@ export default function ProductVariantModal({
             <div className="flex-1">
               <div className="text-lg font-bold text-primary">
                 {(product.is_starting_price || hasTieredPricing) ? t('product.starting_from') + ' ' : ''}
-                {formatCurrencyI18n(price, currency, language)}
+                {formatCurrencyI18n(displayPrice, currency, language)}
               </div>
               {product.short_description && (
                 <p className="text-sm text-muted-foreground mt-1">
