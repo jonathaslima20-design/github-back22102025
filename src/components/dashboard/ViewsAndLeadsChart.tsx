@@ -11,6 +11,8 @@ interface ViewsAndLeadsChartProps {
 export function ViewsAndLeadsChart({ days = 7 }: ViewsAndLeadsChartProps) {
   const { data, loading, error } = useViewsAndLeadsChart(days);
 
+  console.log('📊 ViewsAndLeadsChart render', { dataLength: data.length, loading, error, data });
+
   return (
     <Card className="col-span-full">
       <CardHeader>

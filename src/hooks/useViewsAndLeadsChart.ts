@@ -33,6 +33,7 @@ export function useViewsAndLeadsChart(days: number = 7): UseViewsAndLeadsChartRe
       setLoading(true);
       setError(null);
 
+      console.log('📊 Fetching products for user:', user.id);
       const { data: products, error: productsError } = await supabase
         .from('products')
         .select('id')
@@ -41,8 +42,10 @@ export function useViewsAndLeadsChart(days: number = 7): UseViewsAndLeadsChartRe
       if (productsError) throw productsError;
 
       const productIds = products?.map(p => p.id) || [];
+      console.log('📊 Found products:', productIds.length);
 
       if (productIds.length === 0) {
+        console.log('📊 No products found, showing empty chart');
         const emptyData = generateEmptyData(days);
         setData(emptyData);
         setLoading(false);
@@ -51,6 +54,8 @@ export function useViewsAndLeadsChart(days: number = 7): UseViewsAndLeadsChartRe
 
       const startDate = startOfDay(subDays(new Date(), days - 1));
       const endDate = endOfDay(new Date());
+
+      console.log('📊 Fetching views and leads from', startDate, 'to', endDate);
 
       const [viewsResponse, leadsResponse] = await Promise.all([
         supabase
@@ -71,20 +76,25 @@ export function useViewsAndLeadsChart(days: number = 7): UseViewsAndLeadsChartRe
       if (viewsResponse.error) throw viewsResponse.error;
       if (leadsResponse.error) throw leadsResponse.error;
 
+      console.log('📊 Views data:', viewsResponse.data?.length || 0, 'records');
+      console.log('📊 Leads data:', leadsResponse.data?.length || 0, 'records');
+
       const viewsByDate = groupByDate(viewsResponse.data || [], 'viewed_at');
       const leadsByDate = groupByDate(leadsResponse.data || [], 'created_at');
 
       const chartData = generateChartData(days, viewsByDate, leadsByDate);
+      console.log('�� Chart data generated:', chartData);
       setData(chartData);
       setLoading(false);
     } catch (err) {
-      console.error('Error fetching chart data:', err);
+      console.error('❌ Error fetching chart data:', err);
       setError(err instanceof Error ? err.message : 'Erro ao carregar dados do gráfico');
       setLoading(false);
     }
   };
 
   useEffect(() => {
+    console.log('📊 Chart hook mounted/updated', { userId: user?.id, days });
     fetchChartData();
   }, [user?.id, days]);
 
