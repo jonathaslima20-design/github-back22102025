@@ -48,6 +48,7 @@ export default function ProductVariantModal({
   const [priceTiers, setPriceTiers] = useState<PriceTier[]>([]);
   const [hasTieredPricing, setHasTieredPricing] = useState(false);
   const [loadingTiers, setLoadingTiers] = useState(false);
+  const [minQuantity, setMinQuantity] = useState(1);
   const { addToCart, hasVariant, getVariantQuantity } = useCart();
   const { t } = useTranslation(language);
 
@@ -67,6 +68,12 @@ export default function ProductVariantModal({
           const tiers = await fetchProductPriceTiers(product.id);
           setPriceTiers(tiers);
           setHasTieredPricing(true);
+
+          if (tiers.length > 0) {
+            const minTierQuantity = tiers[0].min_quantity;
+            setMinQuantity(minTierQuantity);
+            setQuantity(minTierQuantity);
+          }
         }
       } catch (error) {
         console.error('Error loading tiered pricing:', error);
@@ -168,7 +175,7 @@ export default function ProductVariantModal({
     // Reset form and close modal
     setSelectedColor(undefined);
     setSelectedSize(undefined);
-    setQuantity(1);
+    setQuantity(hasTieredPricing ? minQuantity : 1);
     onOpenChange(false);
   };
 
@@ -357,8 +364,8 @@ export default function ProductVariantModal({
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                disabled={quantity <= 1}
+                onClick={() => setQuantity(Math.max(minQuantity, quantity - 1))}
+                disabled={quantity <= minQuantity}
               >
                 <Minus className="h-4 w-4" />
               </Button>
@@ -415,7 +422,7 @@ export default function ProductVariantModal({
                         className="h-auto py-2 px-3 flex flex-col items-start"
                         onClick={() => setQuantity(tier.min_quantity)}
                       >
-                        <div className="text-xs font-semibold">{formatPriceTierRange(tier)}</div>
+                        <div className="text-xs font-semibold">{tier.min_quantity} {tier.min_quantity === 1 ? 'Unidade' : 'Unidades'}</div>
                         <div className="text-xs text-muted-foreground">
                           {formatCurrencyI18n(tierPrice, currency, language)}/un
                         </div>
