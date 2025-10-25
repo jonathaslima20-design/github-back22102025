@@ -64,7 +64,7 @@ export function SizesColorsSelector({
               className="w-full flex items-center justify-between p-4 hover:bg-accent/50 transition-colors"
             >
               <Label className="text-base font-medium cursor-pointer">
-                Cores Disponíveis (opcional)
+                Cores (opcional)
               </Label>
               {colorsExpanded ? (
                 <ChevronUp className="h-5 w-5 text-muted-foreground" />
