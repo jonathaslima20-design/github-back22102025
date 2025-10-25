@@ -413,7 +413,7 @@ export default function EditProductPage() {
                 name="title"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Título do Produto *</FormLabel>
+                    <FormLabel>Nome do Produto *</FormLabel>
                     <FormControl>
                       <Input placeholder="Ex: Tênis Nike Air Max 90" {...field} />
                     </FormControl>
@@ -424,30 +424,12 @@ export default function EditProductPage() {
 
               <FormField
                 control={form.control}
-                name="short_description"
+                name="category"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Descrição Curta</FormLabel>
+                    <FormLabel>Categoria</FormLabel>
                     <FormControl>
-                      <Input placeholder="Uma breve descrição do produto" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Descrição Completa *</FormLabel>
-                    <FormControl>
-                      <RichTextEditor
-                        content={field.value}
-                        onChange={field.onChange}
-                        placeholder="Descreva os detalhes do produto..."
-                      />
+                      <Input placeholder="Ex: Calçados, Roupas, Acessórios" {...field} value={field.value.join(', ')} onChange={(e) => field.onChange(e.target.value.split(',').map(s => s.trim()))} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -474,63 +456,59 @@ export default function EditProductPage() {
                   name="model"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Modelo</FormLabel>
+                      <FormLabel>Gênero</FormLabel>
                       <FormControl>
-                        <Input placeholder="Ex: Air Max 90" {...field} />
+                        <Input placeholder="Ex: Masculino, Feminino, Unissex" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
               </div>
+            </CardContent>
+          </Card>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="condition"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Condição</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione a condição" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="novo">Novo</SelectItem>
-                          <SelectItem value="seminovo">Semi-novo</SelectItem>
-                          <SelectItem value="usado">Usado</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+          <Card>
+            <CardHeader>
+              <CardTitle>Tamanhos e Cores</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <FormField
+                control={form.control}
+                name="colors"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Cores Disponíveis (Opcional)</FormLabel>
+                    <FormControl>
+                      <CustomColorSelector
+                        selectedColors={field.value}
+                        onChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-                <FormField
-                  control={form.control}
-                  name="status"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Status</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione o status" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="disponivel">Disponível</SelectItem>
-                          <SelectItem value="reservado">Reservado</SelectItem>
-                          <SelectItem value="vendido">Vendido</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+              <FormField
+                control={form.control}
+                name="sizes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tamanhos</FormLabel>
+                    <FormControl>
+                      <CustomSizeInput
+                        selectedSizes={field.value}
+                        onChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Tamanhos de Vestuário: PP, P, M, G, GG, XG, XXG | Tamanhos de Calçados: 17 a 43
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </CardContent>
           </Card>
 
@@ -652,47 +630,6 @@ export default function EditProductPage() {
                   onValidationChange={setIsPriceTiersValid}
                 />
               )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Variações</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <FormField
-                control={form.control}
-                name="colors"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Cores</FormLabel>
-                    <FormControl>
-                      <CustomColorSelector
-                        selectedColors={field.value}
-                        onChange={field.onChange}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="sizes"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tamanhos</FormLabel>
-                    <FormControl>
-                      <CustomSizeInput
-                        selectedSizes={field.value}
-                        onChange={field.onChange}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
             </CardContent>
           </Card>
 
