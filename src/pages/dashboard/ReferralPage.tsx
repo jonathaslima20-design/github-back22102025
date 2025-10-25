@@ -27,9 +27,11 @@ import WithdrawalDialog from '@/components/referral/WithdrawalDialog';
 
 export default function ReferralPage() {
   const { user } = useAuth();
-  const { stats, pixKeys, referralLink, isLoading, refreshData } = useReferralData(user?.id);
+  const { stats, pixKeys, referralLink, isLoading, refreshData, error } = useReferralData(user?.id);
   const [showPixDialog, setShowPixDialog] = useState(false);
   const [showWithdrawalDialog, setShowWithdrawalDialog] = useState(false);
+
+  console.log('[ReferralPage] Render:', { user: user?.id, stats, pixKeys, referralLink, isLoading, error });
 
   const copyToClipboard = async () => {
     try {
@@ -57,6 +59,22 @@ export default function ReferralPage() {
     );
   }
 
+  if (error && !referralLink) {
+    return (
+      <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            {error || 'Não foi possível gerar seu link de indicação. Por favor, recarregue a página.'}
+          </AlertDescription>
+        </Alert>
+        <Button onClick={refreshData} className="w-full max-w-md mx-auto block">
+          Tentar Novamente
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
       {/* Header Section */}
@@ -69,6 +87,16 @@ export default function ReferralPage() {
           Compartilhe o VitrineTurbo com amigos e ganhe <span className="font-bold text-foreground">até R$ 100</span> por cada indicação que ativar um plano
         </p>
       </div>
+
+      {/* Empty State Banner - Show when no referrals yet */}
+      {(stats?.totalReferrals || 0) === 0 && (
+        <Alert className="border-slate-900 dark:border-slate-100 bg-slate-50 dark:bg-slate-900/20">
+          <Share2 className="h-4 w-4" />
+          <AlertDescription className="text-sm">
+            <strong>Comece agora!</strong> Compartilhe seu link de indicação e ganhe até R$ 100 por cada amigo que ativar um plano.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

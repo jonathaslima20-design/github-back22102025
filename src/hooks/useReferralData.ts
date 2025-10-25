@@ -33,21 +33,51 @@ export function useReferralData(userId: string | undefined): UseReferralDataRetu
       setIsLoading(true);
       setError(null);
 
-      const { data: user } = await supabase
+      console.log('[ReferralData] Fetching data for user:', userId);
+
+      const { data: user, error: userError } = await supabase
         .from('users')
         .select('referral_code')
         .eq('id', userId)
         .single();
 
-      if (user?.referral_code) {
-        const baseUrl = window.location.origin;
-        setReferralLink(`${baseUrl}/register?ref=${user.referral_code}`);
+      console.log('[ReferralData] User data:', user, 'Error:', userError);
+
+      if (userError) {
+        console.error('[ReferralData] Error fetching user:', userError);
+        setError('Erro ao carregar dados do usuário');
       }
 
+      let referralCode = user?.referral_code;
+
+      if (!referralCode) {
+        console.log('[ReferralData] No referral code found, generating one...');
+        referralCode = `REF${Date.now()}${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+
+        const { error: updateError } = await supabase
+          .from('users')
+          .update({ referral_code: referralCode })
+          .eq('id', userId);
+
+        if (updateError) {
+          console.error('[ReferralData] Error updating referral code:', updateError);
+        } else {
+          console.log('[ReferralData] Generated new referral code:', referralCode);
+        }
+      }
+
+      if (referralCode) {
+        const baseUrl = window.location.origin;
+        setReferralLink(`${baseUrl}/register?ref=${referralCode}`);
+      }
+
+      console.log('[ReferralData] Fetching referral stats...');
       const referralStats = await getReferralStats(userId);
+      console.log('[ReferralData] Stats:', referralStats);
       setStats(referralStats);
 
-      const { data: commissionsData } = await supabase
+      console.log('[ReferralData] Fetching commissions...');
+      const { data: commissionsData, error: commissionsError } = await supabase
         .from('referral_commissions')
         .select(`
           *,
@@ -57,28 +87,43 @@ export function useReferralData(userId: string | undefined): UseReferralDataRetu
         .eq('referrer_id', userId)
         .order('created_at', { ascending: false });
 
+      if (commissionsError) {
+        console.error('[ReferralData] Error fetching commissions:', commissionsError);
+      }
+      console.log('[ReferralData] Commissions:', commissionsData);
       setCommissions(commissionsData || []);
 
-      const { data: withdrawalsData } = await supabase
+      console.log('[ReferralData] Fetching withdrawals...');
+      const { data: withdrawalsData, error: withdrawalsError } = await supabase
         .from('withdrawal_requests')
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
+      if (withdrawalsError) {
+        console.error('[ReferralData] Error fetching withdrawals:', withdrawalsError);
+      }
+      console.log('[ReferralData] Withdrawals:', withdrawalsData);
       setWithdrawals(withdrawalsData || []);
 
-      const { data: pixKeysData } = await supabase
+      console.log('[ReferralData] Fetching PIX keys...');
+      const { data: pixKeysData, error: pixKeysError } = await supabase
         .from('user_pix_keys')
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
+      if (pixKeysError) {
+        console.error('[ReferralData] Error fetching PIX keys:', pixKeysError);
+      }
+      console.log('[ReferralData] PIX keys:', pixKeysData);
       setPixKeys(pixKeysData || []);
 
     } catch (err) {
-      console.error('Error fetching referral data:', err);
+      console.error('[ReferralData] Error fetching referral data:', err);
       setError('Erro ao carregar dados de indicações');
     } finally {
+      console.log('[ReferralData] Fetch complete, loading:', false);
       setIsLoading(false);
     }
   };
