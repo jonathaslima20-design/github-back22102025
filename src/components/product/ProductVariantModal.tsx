@@ -341,38 +341,34 @@ export default function ProductVariantModal({
             </div>
           </div>
 
-          {/* Quantity Selection - MOVED TO TOP */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium">Quantidade Total</Label>
-              {hasTieredPricing && (
-                <Badge className="bg-blue-600 text-white text-xs">
-                  <TrendingDown className="h-3 w-3 mr-1" />
-                  Preço Escalonado
-                </Badge>
-              )}
+          {/* Quantity Selection - Only shown when NO tiered pricing */}
+          {!hasTieredPricing && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">Quantidade Total</Label>
+              </div>
+              <div className="flex items-center gap-3">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setQuantity(Math.max(minQuantity, quantity - 1))}
+                  disabled={quantity <= minQuantity}
+                >
+                  <Minus className="h-4 w-4" />
+                </Button>
+                <span className="text-lg font-semibold w-12 text-center">
+                  {quantity}
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setQuantity(quantity + 1)}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
-            <div className="flex items-center gap-3">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setQuantity(Math.max(minQuantity, quantity - 1))}
-                disabled={quantity <= minQuantity}
-              >
-                <Minus className="h-4 w-4" />
-              </Button>
-              <span className="text-lg font-semibold w-12 text-center">
-                {quantity}
-              </span>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setQuantity(quantity + 1)}
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
+          )}
 
           {/* Tiered Pricing Info */}
           {hasTieredPricing && pricingInfo && (
