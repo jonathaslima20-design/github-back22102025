@@ -8,29 +8,36 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('profile');
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Configurações</h1>
-        <p className="text-muted-foreground">Gerencie suas preferências e configurações da loja</p>
+    <div className="container mx-auto p-6 max-w-5xl space-y-8">
+      <div className="space-y-2">
+        <h1 className="text-3xl font-bold tracking-tight">Configurações</h1>
+        <p className="text-muted-foreground">
+          Gerencie suas informações pessoais e configurações da vitrine
+        </p>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="profile">Perfil</TabsTrigger>
-          <TabsTrigger value="storefront">Vitrine</TabsTrigger>
-          <TabsTrigger value="tracking">Rastreamento</TabsTrigger>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2 h-auto p-1 bg-muted/50">
+          <TabsTrigger
+            value="profile"
+            className="data-[state=active]:bg-background data-[state=active]:shadow-sm py-3"
+          >
+            Perfil
+          </TabsTrigger>
+          <TabsTrigger
+            value="storefront"
+            className="data-[state=active]:bg-background data-[state=active]:shadow-sm py-3"
+          >
+            Vitrine
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="profile" className="space-y-4">
+        <TabsContent value="profile" className="mt-6">
           <ProfileSettings />
         </TabsContent>
 
-        <TabsContent value="storefront" className="space-y-4">
+        <TabsContent value="storefront" className="mt-6">
           <StorefrontSettings />
-        </TabsContent>
-
-        <TabsContent value="tracking" className="space-y-4">
-          <TrackingSettingsContent />
         </TabsContent>
       </Tabs>
     </div>

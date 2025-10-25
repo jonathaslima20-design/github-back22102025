@@ -269,29 +269,31 @@ export function ProfileSettings() {
   return (
     <div className="space-y-6">
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
           {/* Avatar Section */}
-          <AvatarSection 
-            user={user}
-            previewImage={previewImage}
-            setPreviewImage={setPreviewImage}
-          />
+          <div className="flex flex-col items-center space-y-4 py-6">
+            <AvatarSection
+              user={user}
+              previewImage={previewImage}
+              setPreviewImage={setPreviewImage}
+            />
+          </div>
 
-          <Separator className="my-6" />
+          <Separator />
 
           {/* Cover Images Section */}
           <Collapsible open={coverImagesOpen} onOpenChange={setCoverImagesOpen}>
             <CollapsibleTrigger asChild>
               <Button
-                variant="outline"
-                className="w-full justify-between"
+                variant="ghost"
+                className="w-full justify-between h-auto py-4 px-4 hover:bg-muted/50 rounded-lg border border-input"
                 type="button"
               >
-                Imagens de Capa
-                <ChevronDown className={`h-4 w-4 transition-transform ${coverImagesOpen ? 'rotate-180' : ''}`} />
+                <span className="font-medium">Imagens de Capa</span>
+                <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${coverImagesOpen ? 'rotate-180' : ''}`} />
               </Button>
             </CollapsibleTrigger>
-            <CollapsibleContent className="space-y-6 mt-4">
+            <CollapsibleContent className="mt-4">
               <CoverImageSection
                 user={user}
                 previewCover={previewCover}
@@ -300,21 +302,21 @@ export function ProfileSettings() {
             </CollapsibleContent>
           </Collapsible>
 
-          <Separator className="my-6" />
+          <Separator />
 
           {/* Promotional Banner Section */}
           <Collapsible open={promotionalBannerOpen} onOpenChange={setPromotionalBannerOpen}>
             <CollapsibleTrigger asChild>
               <Button
-                variant="outline"
-                className="w-full justify-between"
+                variant="ghost"
+                className="w-full justify-between h-auto py-4 px-4 hover:bg-muted/50 rounded-lg border border-input"
                 type="button"
               >
-                Banner Promocional
-                <ChevronDown className={`h-4 w-4 transition-transform ${promotionalBannerOpen ? 'rotate-180' : ''}`} />
+                <span className="font-medium">Banner Promocional</span>
+                <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${promotionalBannerOpen ? 'rotate-180' : ''}`} />
               </Button>
             </CollapsibleTrigger>
-            <CollapsibleContent className="space-y-6 mt-4">
+            <CollapsibleContent className="mt-4">
               <PromotionalBannerSection
                 user={user}
                 previewBanner={previewBanner}
@@ -323,30 +325,117 @@ export function ProfileSettings() {
             </CollapsibleContent>
           </Collapsible>
 
-          <Separator className="my-6" />
+          <Separator />
 
-          {/* Basic Information */}
-          <BasicInfoForm
-            form={form}
-            user={user}
-            onNameChange={handleNameChange}
-          />
+          {/* Basic Information - Grid Layout */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Nome</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      onChange={handleNameChange}
+                      placeholder="Seu nome"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          <FormField
-            control={form.control}
-            name="bio"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Biografia</FormLabel>
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input {...field} type="email" placeholder="seu@email.com" />
+                  </FormControl>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Ao alterar o email, você receberá um link de confirmação no novo endereço. O login continuará funcionando com o email atual até que você confirme o novo email.
+                  </p>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          <Separator className="my-6" />
+            <FormField
+              control={form.control}
+              name="language"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Idioma</FormLabel>
+                  <FormControl>
+                    <Input {...field} disabled placeholder="Português (Brasil)" />
+                  </FormControl>
+                  <p className="text-xs text-muted-foreground">
+                    Idioma da sua vitrine pública
+                  </p>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="currency"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Moeda</FormLabel>
+                  <FormControl>
+                    <Input {...field} disabled placeholder="BRL - Real Brasileiro" />
+                  </FormControl>
+                  <p className="text-xs text-muted-foreground">
+                    Moeda para exibição de preços na vitrine
+                  </p>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="phone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Telefone</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      placeholder="(91) 98196-9247"
+                      maxLength={15}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="whatsapp"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>WhatsApp</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      placeholder="(91) 98196-9247"
+                      maxLength={15}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <Separator />
 
           {/* Theme Toggle */}
           <ThemeToggleSection
@@ -355,16 +444,17 @@ export function ProfileSettings() {
             setIsDarkTheme={setIsDarkTheme}
           />
 
-          <div className="flex justify-end space-x-4 mt-6">
+          <div className="flex justify-end space-x-4 pt-6">
             <PasswordChangeDialog
               user={user}
               open={showPasswordDialog}
               onOpenChange={setShowPasswordDialog}
             />
-            
+
             <Button
               type="submit"
               disabled={saving}
+              size="lg"
             >
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Salvar Alterações
