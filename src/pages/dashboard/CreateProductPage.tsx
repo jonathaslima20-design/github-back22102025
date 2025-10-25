@@ -175,13 +175,19 @@ export default function CreateProductPage() {
       }
 
       if (pricingMode === 'tiered' && priceTiers.length > 0) {
-        const tierRecords = priceTiers.map(tier => ({
-          product_id: product.id,
-          min_quantity: tier.min_quantity,
-          max_quantity: tier.max_quantity,
-          unit_price: tier.unit_price,
-          discounted_unit_price: tier.discounted_unit_price,
-        }));
+        const sortedTiers = [...priceTiers].sort((a, b) => a.min_quantity - b.min_quantity);
+
+        const tierRecords = sortedTiers.map((tier, index, array) => {
+          const isLastTier = index === array.length - 1;
+
+          return {
+            product_id: product.id,
+            min_quantity: tier.min_quantity,
+            max_quantity: isLastTier ? null : tier.max_quantity,
+            unit_price: tier.unit_price,
+            discounted_unit_price: tier.discounted_unit_price,
+          };
+        });
 
         const { error: tiersError } = await supabase
           .from('product_price_tiers')
