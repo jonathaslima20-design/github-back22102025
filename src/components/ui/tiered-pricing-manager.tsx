@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { NumericFormat } from 'react-number-format';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -54,6 +54,7 @@ interface TieredPricingManagerProps {
   currency?: SupportedCurrency;
   locale?: SupportedLanguage;
   productId?: string;
+  onValidationChange?: (isValid: boolean) => void;
 }
 
 export function TieredPricingManager({
@@ -61,7 +62,8 @@ export function TieredPricingManager({
   onChange,
   currency = 'BRL',
   locale = 'pt-BR',
-  productId
+  productId,
+  onValidationChange
 }: TieredPricingManagerProps) {
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [deleteConfirmIndex, setDeleteConfirmIndex] = useState<number | null>(null);
@@ -145,6 +147,13 @@ export function TieredPricingManager({
   }, []);
 
   const errors = useMemo(() => validateTiers(tiers), [tiers, validateTiers]);
+  const isValid = useMemo(() => errors.length === 0, [errors]);
+
+  useEffect(() => {
+    if (onValidationChange) {
+      onValidationChange(isValid);
+    }
+  }, [isValid, onValidationChange]);
 
   const minPrice = useMemo(() => {
     if (tiers.length === 0) return null;

@@ -70,6 +70,7 @@ export default function EditProductPage() {
   const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
   const [pricingMode, setPricingMode] = useState<'simple' | 'tiered'>('simple');
   const [priceTiers, setPriceTiers] = useState<PriceTier[]>([]);
+  const [isPriceTiersValid, setIsPriceTiersValid] = useState(true);
 
   const form = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
@@ -226,6 +227,11 @@ export default function EditProductPage() {
 
     if (pricingMode === 'tiered' && priceTiers.length === 0) {
       toast.error('Adicione pelo menos um nível de preço');
+      return;
+    }
+
+    if (pricingMode === 'tiered' && !isPriceTiersValid) {
+      toast.error('Por favor, corrija os erros nos níveis de preço antes de salvar');
       return;
     }
 
@@ -636,6 +642,7 @@ export default function EditProductPage() {
                 <TieredPricingManager
                   tiers={priceTiers}
                   onChange={setPriceTiers}
+                  onValidationChange={setIsPriceTiersValid}
                 />
               )}
             </CardContent>
