@@ -4,6 +4,7 @@ import { Package, TrendingUp, Users, DollarSign, Loader2, RefreshCw } from 'luci
 import { useDashboardStats } from '@/hooks/useDashboardStats';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { ViewsAndLeadsChart } from '@/components/dashboard/ViewsAndLeadsChart';
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -101,6 +102,10 @@ export default function DashboardPage() {
             )}
           </CardContent>
         </Card>
+      </div>
+
+      <div className="grid gap-4">
+        <ViewsAndLeadsChart days={7} />
       </div>
     </div>
   );
