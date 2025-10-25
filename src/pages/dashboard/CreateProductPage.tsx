@@ -179,7 +179,8 @@ export default function CreateProductPage() {
       if (pricingMode === 'tiered' && priceTiers.length > 0) {
         const tierRecords = priceTiers.map(tier => ({
           product_id: product.id,
-          quantity: tier.quantity,
+          min_quantity: tier.min_quantity,
+          max_quantity: tier.max_quantity,
           unit_price: tier.unit_price,
           discounted_unit_price: tier.discounted_unit_price,
         }));

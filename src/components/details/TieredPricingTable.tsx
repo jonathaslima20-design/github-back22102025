@@ -27,7 +27,7 @@ export default function TieredPricingTable({
 
   if (!tiers || tiers.length === 0) return null;
 
-  const sortedTiers = [...tiers].sort((a, b) => a.quantity - b.quantity);
+  const sortedTiers = [...tiers].sort((a, b) => a.min_quantity - b.min_quantity);
   const bestValueTier = getBestValueTier(sortedTiers);
   const baseUnitPrice = baseDiscountedPrice || basePrice;
 
@@ -70,8 +70,8 @@ export default function TieredPricingTable({
                 {sortedTiers.map((tier) => {
                   const unitPrice = tier.discounted_unit_price || tier.unit_price;
                   const isBestValue = bestValueTier?.id === tier.id;
-                  const totalAtQty = unitPrice * tier.quantity;
-                  const baseTotal = baseUnitPrice * tier.quantity;
+                  const totalAtQty = unitPrice * tier.min_quantity;
+                  const baseTotal = baseUnitPrice * tier.min_quantity;
                   const savings = baseTotal - totalAtQty;
                   const savingsPercentage = calculateSavingsPercentage(baseUnitPrice, unitPrice);
 
@@ -178,8 +178,8 @@ export default function TieredPricingTable({
               <div className="p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
                 <p className="text-sm text-blue-800 dark:text-blue-200">
                   <span className="font-semibold">Dica:</span> Compre{' '}
-                  <span className="font-bold">{calculatorResult.nextTier.quantity}</span>{' '}
-                  {calculatorResult.nextTier.quantity === 1 ? 'unidade' : 'unidades'} para economizar adicional{' '}
+                  <span className="font-bold">{calculatorResult.nextTier.min_quantity}</span>{' '}
+                  {calculatorResult.nextTier.min_quantity === 1 ? 'unidade' : 'unidades'} para economizar adicional{' '}
                   <span className="font-bold">
                     {formatCurrencyI18n(calculatorResult.nextTierSavings, currency, language)}
                   </span>

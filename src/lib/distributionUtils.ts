@@ -41,7 +41,7 @@ export async function createDistribution(
     );
 
     const applicableTier = tiers.find(
-      tier => params.total_quantity >= tier.quantity
+      tier => params.total_quantity >= tier.min_quantity && (!tier.max_quantity || params.total_quantity <= tier.max_quantity)
     );
 
     const { data: distribution, error: distError } = await supabase
@@ -53,7 +53,8 @@ export async function createDistribution(
         applied_tier_price: priceResult.unitPrice,
         metadata: {
           tier_id: applicableTier?.id,
-          quantity: applicableTier?.quantity,
+          min_quantity: applicableTier?.min_quantity,
+          max_quantity: applicableTier?.max_quantity,
           original_price: basePrice,
         }
       })
@@ -115,14 +116,15 @@ export async function updateDistribution(
       );
 
       const applicableTier = tiers.find(
-        tier => params.total_quantity >= tier.quantity
+        tier => params.total_quantity >= tier.min_quantity && (!tier.max_quantity || params.total_quantity <= tier.max_quantity)
       );
 
       updates.total_quantity = params.total_quantity;
       updates.applied_tier_price = priceResult.unitPrice;
       updates.metadata = {
         tier_id: applicableTier?.id,
-        quantity: applicableTier?.quantity,
+        min_quantity: applicableTier?.min_quantity,
+        max_quantity: applicableTier?.max_quantity,
         original_price: basePrice,
       };
     }

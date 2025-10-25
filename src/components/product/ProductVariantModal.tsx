@@ -403,17 +403,17 @@ export default function ProductVariantModal({
                 <div className="grid grid-cols-2 gap-2">
                   {priceTiers.slice(0, 4).map((tier) => {
                     const tierPrice = tier.discounted_unit_price || tier.unit_price;
-                    const tierTotal = tierPrice * tier.quantity;
+                    const tierTotal = tierPrice * tier.min_quantity;
                     const basePrice = product.discounted_price || product.price;
-                    const savings = (basePrice * tier.quantity) - tierTotal;
-                    const savingsPercent = Math.round((savings / (basePrice * tier.quantity)) * 100);
+                    const savings = (basePrice * tier.min_quantity) - tierTotal;
+                    const savingsPercent = Math.round((savings / (basePrice * tier.min_quantity)) * 100);
 
                     return (
                       <Button
                         key={tier.id}
-                        variant={quantity === tier.quantity ? "default" : "outline"}
+                        variant={quantity === tier.min_quantity ? "default" : "outline"}
                         className="h-auto py-2 px-3 flex flex-col items-start"
-                        onClick={() => setQuantity(tier.quantity)}
+                        onClick={() => setQuantity(tier.min_quantity)}
                       >
                         <div className="text-xs font-semibold">{formatPriceTierRange(tier)}</div>
                         <div className="text-xs text-muted-foreground">

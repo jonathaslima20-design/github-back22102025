@@ -36,7 +36,8 @@ import { toast } from 'sonner';
 
 export interface PriceTier {
   id?: string;
-  quantity: number;
+  min_quantity: number;
+  max_quantity?: number | null;
   unit_price: number;
   discounted_unit_price?: number | null;
 }
@@ -67,7 +68,7 @@ export function TieredPricingManager({
   const [editingTier, setEditingTier] = useState<Partial<PriceTier> | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [newTier, setNewTier] = useState<Partial<PriceTier>>({
-    quantity: 1,
+    min_quantity: 1,
     unit_price: 0,
     discounted_unit_price: null
   });
@@ -97,22 +98,22 @@ export function TieredPricingManager({
     for (let i = 0; i < tiersToValidate.length; i++) {
       const tier = tiersToValidate[i];
 
-      if (tier.quantity <= 0) {
+      if (tier.min_quantity <= 0) {
         errors.push({
           type: 'invalid_quantity',
-          message: `Faixa ${i + 1}: Quantidade deve ser maior que 0`,
+          message: `Faixa ${i + 1}: Quantidade mínima deve ser maior que 0`,
           tierIndex: i
         });
       }
 
-      if (quantitySet.has(tier.quantity)) {
+      if (quantitySet.has(tier.min_quantity)) {
         errors.push({
           type: 'duplicate',
-          message: `Faixa ${i + 1}: Quantidade ${tier.quantity} duplicada`,
+          message: `Faixa ${i + 1}: Quantidade mínima ${tier.min_quantity} duplicada`,
           tierIndex: i
         });
       }
-      quantitySet.add(tier.quantity);
+      quantitySet.add(tier.min_quantity);
 
       if (tier.unit_price <= 0) {
         errors.push({
@@ -151,8 +152,8 @@ export function TieredPricingManager({
   }, [tiers]);
 
   const handleAddTier = useCallback(() => {
-    if (!newTier.quantity || newTier.quantity <= 0) {
-      toast.error('A quantidade deve ser maior que zero');
+    if (!newTier.min_quantity || newTier.min_quantity <= 0) {
+      toast.error('A quantidade mínima deve ser maior que zero');
       return;
     }
 
@@ -161,14 +162,15 @@ export function TieredPricingManager({
       return;
     }
 
-    const quantityExists = tiers.some(t => t.quantity === newTier.quantity);
+    const quantityExists = tiers.some(t => t.min_quantity === newTier.min_quantity);
     if (quantityExists) {
-      toast.error(`Já existe uma faixa para ${newTier.quantity} unidades`);
+      toast.error(`Já existe uma faixa para ${newTier.min_quantity} unidades`);
       return;
     }
 
     const tierToAdd: PriceTier = {
-      quantity: newTier.quantity,
+      min_quantity: newTier.min_quantity,
+      max_quantity: newTier.max_quantity,
       unit_price: newTier.unit_price,
       discounted_unit_price: newTier.discounted_unit_price ?? null
     };
@@ -181,7 +183,7 @@ export function TieredPricingManager({
     toast.success('Faixa de preço adicionada. Clique em "Salvar Alterações" no final da página para confirmar.');
 
     setNewTier({
-      quantity: (newTier.quantity || 1) + 10,
+      min_quantity: (newTier.min_quantity || 1) + 10,
       unit_price: 0,
       discounted_unit_price: null
     });
@@ -208,7 +210,8 @@ export function TieredPricingManager({
     const tier = tiers[index];
     setEditingIndex(index);
     setEditingTier({
-      quantity: tier.quantity,
+      min_quantity: tier.min_quantity,
+      max_quantity: tier.max_quantity,
       unit_price: tier.unit_price,
       discounted_unit_price: tier.discounted_unit_price
     });
@@ -222,8 +225,8 @@ export function TieredPricingManager({
   const handleSaveEdit = useCallback(() => {
     if (editingIndex === null || !editingTier) return;
 
-    if (!editingTier.quantity || editingTier.quantity <= 0) {
-      toast.error('A quantidade deve ser maior que zero');
+    if (!editingTier.min_quantity || editingTier.min_quantity <= 0) {
+      toast.error('A quantidade mínima deve ser maior que zero');
       return;
     }
 
@@ -233,10 +236,10 @@ export function TieredPricingManager({
     }
 
     const quantityExists = tiers.some((t, idx) =>
-      idx !== editingIndex && t.quantity === editingTier.quantity
+      idx !== editingIndex && t.min_quantity === editingTier.min_quantity
     );
     if (quantityExists) {
-      toast.error(`Já existe uma faixa para ${editingTier.quantity} unidades`);
+      toast.error(`Já existe uma faixa para ${editingTier.min_quantity} unidades`);
       return;
     }
 
@@ -254,7 +257,8 @@ export function TieredPricingManager({
     const updatedTiers = [...tiers];
     updatedTiers[editingIndex] = {
       ...tiers[editingIndex],
-      quantity: editingTier.quantity,
+      min_quantity: editingTier.min_quantity,
+      max_quantity: editingTier.max_quantity,
       unit_price: editingTier.unit_price,
       discounted_unit_price: editingTier.discounted_unit_price ?? null
     };
@@ -339,7 +343,7 @@ export function TieredPricingManager({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {[...tiers].sort((a, b) => a.quantity - b.quantity).map((tier, index) => {
+                  {[...tiers].sort((a, b) => a.min_quantity - b.min_quantity).map((tier, index) => {
                     const savings = calculateSavings(tier.unit_price, tier.discounted_unit_price);
                     const hasError = errors.some(e => e.tierIndex === index);
                     const isEditing = editingIndex === index;
@@ -351,10 +355,10 @@ export function TieredPricingManager({
                             <Input
                               type="number"
                               min={1}
-                              value={editingTier.quantity || ''}
+                              value={editingTier.min_quantity || ''}
                               onChange={(e) => setEditingTier({
                                 ...editingTier,
-                                quantity: parseInt(e.target.value) || 1
+                                min_quantity: parseInt(e.target.value) || 1
                               })}
                               className="w-24"
                               placeholder="Ex: 10"
@@ -417,7 +421,7 @@ export function TieredPricingManager({
                         <TableCell className="font-medium">
                           <div className="flex items-center gap-2">
                             <Package className="h-4 w-4 text-muted-foreground" />
-                            {tier.quantity} unidade{tier.quantity > 1 ? 's' : ''}
+                            {tier.min_quantity}+ unidade{tier.min_quantity > 1 ? 's' : ''}
                           </div>
                         </TableCell>
                         <TableCell>
@@ -531,16 +535,16 @@ export function TieredPricingManager({
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <FormLabel>Quantidade *</FormLabel>
+              <FormLabel>Quantidade Mínima *</FormLabel>
               <Input
                 type="number"
                 min={1}
-                value={newTier.quantity || ''}
-                onChange={(e) => setNewTier({ ...newTier, quantity: parseInt(e.target.value) || 1 })}
+                value={newTier.min_quantity || ''}
+                onChange={(e) => setNewTier({ ...newTier, min_quantity: parseInt(e.target.value) || 1 })}
                 placeholder="Ex: 10, 50, 100"
               />
               <p className="text-xs text-muted-foreground">
-                Quantidade exata para este preço
+                Quantidade mínima para este preço
               </p>
             </div>
 
