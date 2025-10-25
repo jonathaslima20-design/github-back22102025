@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ShoppingCart, Plus, Minus, X, TrendingDown } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, X, TrendingDown, Trash2, Palette, Ruler } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
@@ -27,6 +27,13 @@ import { supabase } from '@/lib/supabase';
 import TieredPricingIndicator from '@/components/product/TieredPricingIndicator';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
+interface DistributionItem {
+  id: string;
+  color?: string;
+  size?: string;
+  quantity: number;
+}
+
 interface ProductVariantModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -42,9 +49,12 @@ export default function ProductVariantModal({
   currency = 'BRL',
   language = 'pt-BR'
 }: ProductVariantModalProps) {
-  const [selectedColor, setSelectedColor] = useState<string | undefined>();
-  const [selectedSize, setSelectedSize] = useState<string | undefined>();
   const [quantity, setQuantity] = useState(1);
+  const [distributionMode, setDistributionMode] = useState(false);
+  const [distributionItems, setDistributionItems] = useState<DistributionItem[]>([]);
+  const [newItemColor, setNewItemColor] = useState<string | undefined>();
+  const [newItemSize, setNewItemSize] = useState<string | undefined>();
+  const [newItemQuantity, setNewItemQuantity] = useState(1);
   const [priceTiers, setPriceTiers] = useState<PriceTier[]>([]);
   const [hasTieredPricing, setHasTieredPricing] = useState(false);
   const [loadingTiers, setLoadingTiers] = useState(false);
@@ -148,41 +158,125 @@ export default function ProductVariantModal({
     }
   };
 
-  const currentVariantQuantity = getVariantQuantity(product.id, selectedColor, selectedSize);
-  const inCart = hasVariant(product.id, selectedColor, selectedSize);
+  // Calculate distributed quantity
+  const distributedQuantity = distributionItems.reduce((sum, item) => sum + item.quantity, 0);
+  const remainingQuantity = quantity - distributedQuantity;
+  const isDistributionComplete = distributedQuantity === quantity;
+  const isDistributionOverflow = distributedQuantity > quantity;
 
-  const handleAddToCart = () => {
-    // Validate required selections for products with options
-    if (hasOptions) {
-      if (hasColors && !selectedColor) {
-        toast.error('Selecione uma cor');
-        return;
-      }
-      if (hasSizes && !selectedSize) {
-        toast.error('Selecione um tamanho');
-        return;
-      }
+  // Enable distribution mode when quantity > 1 and product has options
+  useEffect(() => {
+    if (hasOptions && quantity > 1) {
+      setDistributionMode(true);
+    } else {
+      setDistributionMode(false);
+      setDistributionItems([]);
+    }
+  }, [quantity, hasOptions]);
+
+  // Reset modal when closed
+  useEffect(() => {
+    if (!open) {
+      setQuantity(hasTieredPricing ? minQuantity : 1);
+      setDistributionMode(false);
+      setDistributionItems([]);
+      setNewItemColor(undefined);
+      setNewItemSize(undefined);
+      setNewItemQuantity(1);
+    }
+  }, [open, hasTieredPricing, minQuantity]);
+
+  const addDistributionItem = () => {
+    if (hasColors && !newItemColor) {
+      toast.error('Selecione uma cor');
+      return;
+    }
+    if (hasSizes && !newItemSize) {
+      toast.error('Selecione um tamanho');
+      return;
+    }
+    if (newItemQuantity <= 0) {
+      toast.error('Quantidade deve ser maior que zero');
+      return;
+    }
+    if (distributedQuantity + newItemQuantity > quantity) {
+      toast.error(`Quantidade excede o total. Restante: ${remainingQuantity}`);
+      return;
     }
 
+    // Check for duplicate
+    const isDuplicate = distributionItems.some(
+      item => item.color === newItemColor && item.size === newItemSize
+    );
+
+    if (isDuplicate) {
+      toast.error('Esta combinação de cor e tamanho já foi adicionada');
+      return;
+    }
+
+    const newItem: DistributionItem = {
+      id: `${Date.now()}-${Math.random()}`,
+      color: hasColors ? newItemColor : undefined,
+      size: hasSizes ? newItemSize : undefined,
+      quantity: newItemQuantity,
+    };
+
+    setDistributionItems([...distributionItems, newItem]);
+    setNewItemColor(undefined);
+    setNewItemSize(undefined);
+    setNewItemQuantity(1);
+  };
+
+  const removeDistributionItem = (id: string) => {
+    setDistributionItems(distributionItems.filter(item => item.id !== id));
+  };
+
+  const updateDistributionItemQuantity = (id: string, newQty: number) => {
+    if (newQty <= 0) {
+      removeDistributionItem(id);
+      return;
+    }
+
+    setDistributionItems(distributionItems.map(item =>
+      item.id === id ? { ...item, quantity: newQty } : item
+    ));
+  };
+
+  const handleAddToCart = () => {
     // Calculate the unit price (with tiered pricing if applicable)
     const unitPrice = hasTieredPricing && pricingInfo ? pricingInfo.unitPrice : undefined;
 
-    // Add the specified quantity with tiered price
-    addToCart(product, selectedColor, selectedSize, quantity, unitPrice);
+    // If distribution mode is active and has options
+    if (distributionMode && hasOptions) {
+      // Validate distribution is complete
+      if (!isDistributionComplete) {
+        toast.error(`Distribua todas as ${quantity} unidades. Restante: ${remainingQuantity}`);
+        return;
+      }
 
-    toast.success(`${quantity} ${quantity === 1 ? 'item adicionado' : 'itens adicionados'} ao carrinho`);
+      if (distributionItems.length === 0) {
+        toast.error('Adicione pelo menos uma variação');
+        return;
+      }
 
-    // Reset form and close modal
-    setSelectedColor(undefined);
-    setSelectedSize(undefined);
-    setQuantity(hasTieredPricing ? minQuantity : 1);
+      // Add each distribution item to cart separately
+      distributionItems.forEach(item => {
+        addToCart(product, item.color, item.size, item.quantity, unitPrice);
+      });
+
+      toast.success(`${quantity} ${quantity === 1 ? 'item adicionado' : 'itens adicionados'} ao carrinho`);
+    } else {
+      // Simple add to cart (quantity = 1 or no options)
+      addToCart(product, undefined, undefined, quantity, unitPrice);
+      toast.success(`${quantity} ${quantity === 1 ? 'item adicionado' : 'itens adicionados'} ao carrinho`);
+    }
+
+    // Reset and close
     onOpenChange(false);
   };
 
-  const canAddToCart = (!hasColors || selectedColor) && (!hasSizes || selectedSize);
-  
-  // For products without options, always allow add to cart
-  const canAddToCartFinal = !hasOptions || canAddToCart;
+  // Can add to cart if distribution is complete (when in distribution mode) or no options
+  const canAddToCart = distributionMode ? isDistributionComplete : true;
 
   // Calculate price with tiered pricing if applicable
   let price = product.discounted_price || product.price;
@@ -245,114 +339,10 @@ export default function ProductVariantModal({
             </div>
           </div>
 
-          {/* Color Selection */}
-          {hasColors && (
-            <div className="space-y-3">
-              <Label className="text-sm font-medium">
-                Cor <span className="text-destructive">*</span>
-              </Label>
-              <Select value={selectedColor || ''} onValueChange={(value) => setSelectedColor(value || undefined)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione uma cor">
-                    {selectedColor && (
-                      <div className="flex items-center gap-2">
-                        <div 
-                          className="w-4 h-4 rounded-full border border-gray-300 shadow-sm"
-                          style={{ backgroundColor: getColorValue(selectedColor) }}
-                        />
-                        <span className="capitalize">{selectedColor}</span>
-                      </div>
-                    )}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {product.colors!.map((color: string) => {
-                    const colorValue = getColorValue(color);
-                    return (
-                      <SelectItem key={color} value={color}>
-                        <div className="flex items-center gap-2">
-                          <div 
-                            className="w-4 h-4 rounded-full border border-gray-300 shadow-sm"
-                            style={{ backgroundColor: colorValue }}
-                          />
-                          <span className="capitalize">{color}</span>
-                        </div>
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-              {!selectedSize && (
-                <p className="text-xs text-muted-foreground">Selecione uma cor para continuar</p>
-              )}
-            </div>
-          )}
-
-          {/* Size Selection */}
-          {hasSizes && (
-            <div className="space-y-3">
-              <Label className="text-sm font-medium">
-                Tamanho <span className="text-destructive">*</span>
-              </Label>
-              <Select value={selectedSize || ''} onValueChange={(value) => setSelectedSize(value || undefined)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um tamanho">
-                    {selectedSize && (
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{selectedSize}</span>
-                        {(() => {
-                          const numericSize = parseInt(selectedSize);
-                          if (!isNaN(numericSize) && numericSize >= 17 && numericSize <= 43) {
-                            return null;
-                          } else if (['PP', 'P', 'M', 'G', 'GG', 'XG', 'XXG'].includes(selectedSize)) {
-                            return <Badge variant="outline" className="text-xs">Vestuário</Badge>;
-                          } else {
-                            return <Badge variant="outline" className="text-xs">Personalizado</Badge>;
-                          }
-                        })()}
-                      </div>
-                    )}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {(() => {
-                    const { apparelSizes, shoeSizes } = separateSizes(product.sizes!);
-                    const sortedApparelSizes = sortSizes(apparelSizes, false);
-                    const sortedShoeSizes = sortSizes(shoeSizes, true);
-                    const allSizes = [...sortedApparelSizes, ...sortedShoeSizes];
-                    
-                    return allSizes.map((size: string) => {
-                      const numericSize = parseInt(size);
-                      const isShoeSize = !isNaN(numericSize) && numericSize >= 17 && numericSize <= 43;
-                      const isApparelSize = ['PP', 'P', 'M', 'G', 'GG', 'XG', 'XXG'].includes(size);
-                      
-                      return (
-                        <SelectItem key={size} value={size}>
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">{size}</span>
-                            {isShoeSize && (
-                              null
-                            )}
-                            {isApparelSize && (
-                              <Badge variant="outline" className="text-xs">Vestuário</Badge>
-                            )}
-                            {!isShoeSize && !isApparelSize && (
-                              <Badge variant="outline" className="text-xs">Personalizado</Badge>
-                            )}
-                          </div>
-                        </SelectItem>
-                      );
-                    });
-                  })()}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          {/* Quantity Selection */}
+          {/* Quantity Selection - MOVED TO TOP */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium">Quantidade</Label>
+              <Label className="text-sm font-medium">Quantidade Total</Label>
               {hasTieredPricing && (
                 <Badge className="bg-blue-600 text-white text-xs">
                   <TrendingDown className="h-3 w-3 mr-1" />
@@ -439,28 +429,311 @@ export default function ProductVariantModal({
             </Card>
           )}
 
-          {/* Validation message */}
-          {hasOptions && ((!selectedColor && hasColors) || (!selectedSize && hasSizes)) && (
-            <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg">
-              <p className="text-sm text-amber-800 dark:text-amber-200">
-                {(!selectedColor && hasColors) && (!selectedSize && hasSizes)
-                  ? 'Selecione uma cor e um tamanho'
-                  : !selectedColor && hasColors
-                  ? 'Selecione uma cor'
-                  : 'Selecione um tamanho'
-                }
-              </p>
+          {/* Distribution Section - NEW */}
+          {distributionMode && hasOptions && (
+            <Card className="border-orange-200 dark:border-orange-800">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm">Distribuir por Cor e Tamanho</CardTitle>
+                <CardDescription className="text-xs">
+                  Distribua as {quantity} unidades entre cores e tamanhos
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Distribution Progress */}
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Distribuído</span>
+                    <span className={isDistributionOverflow ? 'text-destructive font-bold' : isDistributionComplete ? 'text-green-600 font-bold' : 'font-medium'}>
+                      {distributedQuantity} / {quantity}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Restante</span>
+                    <span className={remainingQuantity < 0 ? 'text-destructive font-bold' : remainingQuantity === 0 ? 'text-green-600 font-bold' : 'font-medium'}>
+                      {remainingQuantity}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Add Distribution Item Form */}
+                <div className="space-y-3 p-3 bg-muted/50 rounded-lg">
+                  <Label className="text-xs font-medium">Adicionar Variação</Label>
+                  <div className="grid gap-2">
+                    {hasColors && (
+                      <Select value={newItemColor || ''} onValueChange={(value) => setNewItemColor(value || undefined)}>
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder="Cor">
+                            {newItemColor && (
+                              <div className="flex items-center gap-2">
+                                <div
+                                  className="w-3 h-3 rounded-full border border-gray-300"
+                                  style={{ backgroundColor: getColorValue(newItemColor) }}
+                                />
+                                <span className="capitalize text-xs">{newItemColor}</span>
+                              </div>
+                            )}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {product.colors!.map((color: string) => (
+                            <SelectItem key={color} value={color}>
+                              <div className="flex items-center gap-2">
+                                <div
+                                  className="w-3 h-3 rounded-full border border-gray-300"
+                                  style={{ backgroundColor: getColorValue(color) }}
+                                />
+                                <span className="capitalize text-xs">{color}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+
+                    {hasSizes && (
+                      <Select value={newItemSize || ''} onValueChange={(value) => setNewItemSize(value || undefined)}>
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder="Tamanho">
+                            {newItemSize && (
+                              <span className="text-xs">{newItemSize}</span>
+                            )}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(() => {
+                            const { apparelSizes, shoeSizes } = separateSizes(product.sizes!);
+                            const sortedApparelSizes = sortSizes(apparelSizes, false);
+                            const sortedShoeSizes = sortSizes(shoeSizes, true);
+                            return [...sortedApparelSizes, ...sortedShoeSizes].map((size: string) => (
+                              <SelectItem key={size} value={size}>
+                                <span className="text-xs">{size}</span>
+                              </SelectItem>
+                            ));
+                          })()}
+                        </SelectContent>
+                      </Select>
+                    )}
+
+                    <div className="flex gap-2">
+                      <div className="flex-1 flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-9 w-9 p-0"
+                          onClick={() => setNewItemQuantity(Math.max(1, newItemQuantity - 1))}
+                        >
+                          <Minus className="h-3 w-3" />
+                        </Button>
+                        <span className="text-sm font-medium w-8 text-center">{newItemQuantity}</span>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-9 w-9 p-0"
+                          onClick={() => setNewItemQuantity(newItemQuantity + 1)}
+                        >
+                          <Plus className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      <Button
+                        size="sm"
+                        onClick={addDistributionItem}
+                        disabled={remainingQuantity <= 0 || (hasColors && !newItemColor) || (hasSizes && !newItemSize)}
+                        className="h-9"
+                      >
+                        <Plus className="h-3 w-3 mr-1" />
+                        Adicionar
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Distribution Items List */}
+                {distributionItems.length > 0 && (
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {distributionItems.map((item) => (
+                      <div key={item.id} className="flex items-center gap-2 p-2 bg-background border rounded-lg">
+                        <div className="flex-1 flex items-center gap-2 text-xs">
+                          {item.color && (
+                            <div className="flex items-center gap-1">
+                              <Palette className="h-3 w-3 text-muted-foreground" />
+                              <div
+                                className="w-3 h-3 rounded-full border border-gray-300"
+                                style={{ backgroundColor: getColorValue(item.color) }}
+                              />
+                              <span className="capitalize">{item.color}</span>
+                            </div>
+                          )}
+                          {item.size && (
+                            <div className="flex items-center gap-1">
+                              <Ruler className="h-3 w-3 text-muted-foreground" />
+                              <span>{item.size}</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 w-7 p-0"
+                            onClick={() => updateDistributionItemQuantity(item.id, item.quantity - 1)}
+                          >
+                            <Minus className="h-3 w-3" />
+                          </Button>
+                          <Badge variant="secondary" className="text-xs min-w-[2rem] justify-center">{item.quantity}</Badge>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 w-7 p-0"
+                            onClick={() => updateDistributionItemQuantity(item.id, item.quantity + 1)}
+                          >
+                            <Plus className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 w-7 p-0 text-destructive"
+                            onClick={() => removeDistributionItem(item.id)}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Validation Messages */}
+                {!isDistributionComplete && distributionItems.length > 0 && (
+                  <div className="p-2 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                    <p className="text-xs text-amber-800 dark:text-amber-200">
+                      Você ainda precisa distribuir {remainingQuantity} {remainingQuantity === 1 ? 'unidade' : 'unidades'}
+                    </p>
+                  </div>
+                )}
+
+                {isDistributionOverflow && (
+                  <div className="p-2 bg-destructive/10 border border-destructive/20 rounded-lg">
+                    <p className="text-xs text-destructive">
+                      Você distribuiu {Math.abs(remainingQuantity)} {Math.abs(remainingQuantity) === 1 ? 'unidade' : 'unidades'} a mais que o total
+                    </p>
+                  </div>
+                )}
+
+                {isDistributionComplete && (
+                  <div className="p-2 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg">
+                    <p className="text-xs text-green-800 dark:text-green-200 flex items-center gap-1">
+                      <Badge className="bg-green-600 text-white h-4 w-4 p-0 flex items-center justify-center">
+                        ✓
+                      </Badge>
+                      Distribuição completa!
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Color Selection - REMOVED (now in distribution) */}
+          {!distributionMode && hasColors && (
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">
+                Cor <span className="text-destructive">*</span>
+              </Label>
+              <Select value={selectedColor || ''} onValueChange={(value) => setSelectedColor(value || undefined)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione uma cor">
+                    {selectedColor && (
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-4 h-4 rounded-full border border-gray-300 shadow-sm"
+                          style={{ backgroundColor: getColorValue(selectedColor) }}
+                        />
+                        <span className="capitalize">{selectedColor}</span>
+                      </div>
+                    )}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {product.colors!.map((color: string) => {
+                    const colorValue = getColorValue(color);
+                    return (
+                      <SelectItem key={color} value={color}>
+                        <div className="flex items-center gap-2">
+                          <div 
+                            className="w-4 h-4 rounded-full border border-gray-300 shadow-sm"
+                            style={{ backgroundColor: colorValue }}
+                          />
+                          <span className="capitalize">{color}</span>
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
             </div>
           )}
 
-          {/* Current variant in cart info */}
-          {inCart && canAddToCartFinal && (
-            <div className="p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-              <p className="text-sm text-blue-800 dark:text-blue-200">
-                Esta variação já está no carrinho ({currentVariantQuantity} {currentVariantQuantity === 1 ? 'unidade' : 'unidades'})
-              </p>
+          {/* Size Selection - REMOVED (now in distribution) */}
+          {!distributionMode && hasSizes && (
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">
+                Tamanho <span className="text-destructive">*</span>
+              </Label>
+              <Select value={selectedSize || ''} onValueChange={(value) => setSelectedSize(value || undefined)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um tamanho">
+                    {selectedSize && (
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{selectedSize}</span>
+                        {(() => {
+                          const numericSize = parseInt(selectedSize);
+                          if (!isNaN(numericSize) && numericSize >= 17 && numericSize <= 43) {
+                            return null;
+                          } else if (['PP', 'P', 'M', 'G', 'GG', 'XG', 'XXG'].includes(selectedSize)) {
+                            return <Badge variant="outline" className="text-xs">Vestuário</Badge>;
+                          } else {
+                            return <Badge variant="outline" className="text-xs">Personalizado</Badge>;
+                          }
+                        })()}
+                      </div>
+                    )}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {(() => {
+                    const { apparelSizes, shoeSizes } = separateSizes(product.sizes!);
+                    const sortedApparelSizes = sortSizes(apparelSizes, false);
+                    const sortedShoeSizes = sortSizes(shoeSizes, true);
+                    const allSizes = [...sortedApparelSizes, ...sortedShoeSizes];
+                    
+                    return allSizes.map((size: string) => {
+                      const numericSize = parseInt(size);
+                      const isShoeSize = !isNaN(numericSize) && numericSize >= 17 && numericSize <= 43;
+                      const isApparelSize = ['PP', 'P', 'M', 'G', 'GG', 'XG', 'XXG'].includes(size);
+                      
+                      return (
+                        <SelectItem key={size} value={size}>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{size}</span>
+                            {isShoeSize && (
+                              null
+                            )}
+                            {isApparelSize && (
+                              <Badge variant="outline" className="text-xs">Vestuário</Badge>
+                            )}
+                            {!isShoeSize && !isApparelSize && (
+                              <Badge variant="outline" className="text-xs">Personalizado</Badge>
+                            )}
+                          </div>
+                        </SelectItem>
+                      );
+                    });
+                  })()}
+                </SelectContent>
+              </Select>
             </div>
           )}
+
 
           {/* Total Price */}
           <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
@@ -481,7 +754,7 @@ export default function ProductVariantModal({
             </Button>
             <Button
               onClick={handleAddToCart}
-              disabled={hasOptions && ((!selectedColor && hasColors) || (!selectedSize && hasSizes))}
+              disabled={!canAddToCart}
               className="flex-1"
             >
               <ShoppingCart className="h-4 w-4 mr-2" />
