@@ -441,6 +441,48 @@ export default function CreateProductPage() {
 
           <Card>
             <CardHeader>
+              <CardTitle>Frase Promocional e Descrição</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <FormField
+                control={form.control}
+                name="short_description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Frase Promocional (opcional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ex: Em até 4x nos cartões ou 10%OFF no Pix" {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      Uma frase curta para destacar promoções ou condições especiais
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Descrição Completa *</FormLabel>
+                    <FormControl>
+                      <RichTextEditor
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="Descreva seu produto em detalhes..."
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
               <CardTitle>Imagens</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
