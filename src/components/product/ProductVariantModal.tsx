@@ -330,7 +330,7 @@ export default function ProductVariantModal({
             </div>
             <div className="flex-1">
               <div className="text-lg font-bold text-primary">
-                {product.is_starting_price ? t('product.starting_from') + ' ' : ''}
+                {(product.is_starting_price || hasTieredPricing) ? t('product.starting_from') + ' ' : ''}
                 {formatCurrencyI18n(price, currency, language)}
               </div>
               {product.short_description && (
