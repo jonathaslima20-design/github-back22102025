@@ -63,9 +63,7 @@ export default function CreateProductPage() {
     isFeatured: boolean;
   }>>([]);
   const [pricingMode, setPricingMode] = useState<'simple' | 'tiered'>('simple');
-  const [priceTiers, setPriceTiers] = useState<PriceTier[]>([
-    { quantity: 1, unit_price: 0, discounted_unit_price: null }
-  ]);
+  const [priceTiers, setPriceTiers] = useState<PriceTier[]>([]);
 
   const form = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
