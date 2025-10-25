@@ -288,31 +288,7 @@ export function TieredPricingManager({
   };
 
   return (
-    <div className="space-y-6">
-      <Alert className="bg-yellow-50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-900">
-        <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
-        <AlertDescription className="text-yellow-800 dark:text-yellow-200">
-          <strong>Importante:</strong> Todas as alterações nas faixas de preço (adicionar, editar ou remover) serão salvas apenas quando você clicar em <strong>"Salvar Alterações"</strong> no final da página.
-        </AlertDescription>
-      </Alert>
-
-      <div className="flex items-start gap-2 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-900">
-        <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-        <div className="space-y-2 text-sm">
-          <p className="font-medium text-blue-900 dark:text-blue-100">
-            Como funciona o preço por quantidade?
-          </p>
-          <p className="text-blue-800 dark:text-blue-200">
-            Defina preços específicos para quantidades exatas. Exemplo: 10 unidades por R$ 100, 50 unidades por R$ 90, 100 unidades por R$ 80.
-          </p>
-          <ul className="list-disc list-inside space-y-1 text-blue-700 dark:text-blue-300">
-            <li>Cada faixa representa uma quantidade específica (ex: 10, 50, 100)</li>
-            <li>Compradores que comprarem essa quantidade exata ou mais receberão esse preço</li>
-            <li>Não pode haver quantidades duplicadas</li>
-            <li>Quanto maior a quantidade, geralmente menor o preço unitário</li>
-          </ul>
-        </div>
-      </div>
+    <div className="space-y-4">
 
       {errors.length > 0 && (
         <Alert variant="destructive">
@@ -331,16 +307,16 @@ export function TieredPricingManager({
       )}
 
       {tiers.length > 0 && (
-        <Card className="p-6">
+        <Card className="p-4 md:p-6 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-2 border-blue-200 dark:border-blue-800">
           <div className="space-y-4">
             <div>
-              <h3 className="text-lg font-semibold mb-2">Faixas de Preço Cadastradas</h3>
-              <p className="text-sm text-muted-foreground">
+              <h3 className="text-lg font-semibold mb-2 text-blue-900 dark:text-blue-100">Faixas de Preço Cadastradas</h3>
+              <p className="text-sm text-blue-700 dark:text-blue-300">
                 Visualize e gerencie seus preços por quantidade
               </p>
             </div>
 
-            <div className="rounded-md border">
+            <div className="rounded-md border overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -533,32 +509,30 @@ export function TieredPricingManager({
         </Card>
       )}
 
-      <Card className="p-6">
+      <Card className="p-4 md:p-6">
         <div className="space-y-4">
           <div>
-            <h3 className="text-lg font-semibold mb-2">Adicionar Nova Quantidade</h3>
-            <p className="text-sm text-muted-foreground">
+            <h3 className="text-base md:text-lg font-semibold mb-2">Adicionar Nova Quantidade</h3>
+            <p className="text-xs md:text-sm text-muted-foreground">
               Defina uma quantidade específica e seu preço unitário
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <FormLabel>Quantidade Mínima *</FormLabel>
+          <div className="grid grid-cols-1 gap-4">
+            <div className="space-y-1.5">
+              <FormLabel className="text-sm">Quantidade Mínima *</FormLabel>
               <Input
                 type="number"
                 min={1}
                 value={newTier.min_quantity || ''}
                 onChange={(e) => setNewTier({ ...newTier, min_quantity: parseInt(e.target.value) || 1 })}
-                placeholder="Ex: 10, 50, 100"
+                placeholder="Ex: 10"
+                className="h-9"
               />
-              <p className="text-xs text-muted-foreground">
-                Quantidade mínima para este preço
-              </p>
             </div>
 
-            <div className="space-y-2">
-              <FormLabel>Preço Unitário *</FormLabel>
+            <div className="space-y-1.5">
+              <FormLabel className="text-sm">Preço Unitário *</FormLabel>
               <NumericFormat
                 {...numberFormatConfig}
                 value={newTier.unit_price || ''}
@@ -566,12 +540,12 @@ export function TieredPricingManager({
                   setNewTier({ ...newTier, unit_price: parseFloat(values.value) || 0 });
                 }}
                 placeholder={`${currencySymbol} 0,00`}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               />
             </div>
 
-            <div className="space-y-2">
-              <FormLabel>Preço Promocional Unitário</FormLabel>
+            <div className="space-y-1.5">
+              <FormLabel className="text-sm">Preço Promocional (opcional)</FormLabel>
               <NumericFormat
                 {...numberFormatConfig}
                 value={newTier.discounted_unit_price || ''}
@@ -582,12 +556,12 @@ export function TieredPricingManager({
                   });
                 }}
                 placeholder={`${currencySymbol} 0,00`}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               />
             </div>
           </div>
 
-          <Button type="button" onClick={handleAddTier} className="w-full md:w-auto">
+          <Button type="button" onClick={handleAddTier} className="w-full" size="sm">
             <Plus className="h-4 w-4 mr-2" />
             Adicionar Quantidade
           </Button>

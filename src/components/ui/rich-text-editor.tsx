@@ -43,7 +43,7 @@ export function RichTextEditor({
     editorProps: {
       attributes: {
         class: cn(
-          'min-h-[150px] focus:outline-none',
+          'min-h-[150px] max-h-[300px] overflow-y-auto focus:outline-none',
           className
         ),
         'data-placeholder': placeholder || 'Digite aqui...',
