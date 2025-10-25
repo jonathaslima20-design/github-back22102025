@@ -15,8 +15,8 @@ interface ListingsFiltersProps {
   categoryFilter: string;
   availableCategories: string[];
   onSearchChange: (query: string) => void;
-  onStatusChange: (status: string) => void;
-  onCategoryChange: (category: string) => void;
+  onStatusFilterChange: (status: string) => void;
+  onCategoryFilterChange: (category: string) => void;
 }
 
 export function ListingsFilters({
@@ -25,8 +25,8 @@ export function ListingsFilters({
   categoryFilter,
   availableCategories,
   onSearchChange,
-  onStatusChange,
-  onCategoryChange,
+  onStatusFilterChange,
+  onCategoryFilterChange,
 }: ListingsFiltersProps) {
   return (
     <div className="mb-6 space-y-4">
@@ -43,7 +43,7 @@ export function ListingsFilters({
 
       <div className="flex flex-col md:flex-row gap-4">
         {/* Status Filter Tabs */}
-        <Tabs value={statusFilter} onValueChange={onStatusChange}>
+        <Tabs value={statusFilter} onValueChange={onStatusFilterChange}>
           <TabsList className="grid w-full grid-cols-3 max-w-md">
             <TabsTrigger value="todos">Todos</TabsTrigger>
             <TabsTrigger value="visiveis">Visíveis</TabsTrigger>
@@ -54,7 +54,7 @@ export function ListingsFilters({
         {/* Category Filter */}
         {availableCategories.length > 0 && (
           <div className="max-w-xs">
-            <Select value={categoryFilter} onValueChange={onCategoryChange}>
+            <Select value={categoryFilter} onValueChange={onCategoryFilterChange}>
               <SelectTrigger>
                 <SelectValue placeholder="Filtrar por categoria" />
               </SelectTrigger>
