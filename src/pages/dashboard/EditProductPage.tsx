@@ -329,11 +329,18 @@ export default function EditProductPage() {
 
           const tierRecords = sortedTiers.map((tier, index, array) => {
             const isLastTier = index === array.length - 1;
+            const nextTier = !isLastTier ? array[index + 1] : null;
+
+            const maxQuantity = isLastTier
+              ? null
+              : nextTier
+                ? nextTier.min_quantity - 1
+                : null;
 
             return {
               product_id: id,
               min_quantity: tier.min_quantity,
-              max_quantity: isLastTier ? null : tier.max_quantity,
+              max_quantity: maxQuantity,
               unit_price: tier.unit_price,
               discounted_unit_price: tier.discounted_unit_price,
             };
