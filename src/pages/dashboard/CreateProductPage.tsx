@@ -64,7 +64,7 @@ export default function CreateProductPage() {
   }>>([]);
   const [pricingMode, setPricingMode] = useState<'simple' | 'tiered'>('simple');
   const [priceTiers, setPriceTiers] = useState<PriceTier[]>([
-    { min_quantity: 1, max_quantity: null, unit_price: 0, discounted_unit_price: null }
+    { quantity: 1, unit_price: 0, discounted_unit_price: null }
   ]);
 
   const form = useForm<ProductFormData>({
@@ -163,8 +163,7 @@ export default function CreateProductPage() {
           .filter(url => url !== null)
           .map(url => ({
             product_id: product.id,
-            min_quantity: tier.min_quantity,
-            max_quantity: tier.max_quantity,
+            url: url,
             is_featured: false,
           }));
 

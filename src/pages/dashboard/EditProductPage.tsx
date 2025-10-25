@@ -175,14 +175,13 @@ export default function EditProductPage() {
             .from('product_price_tiers')
             .select('*')
             .eq('product_id', id)
-            .order('min_quantity');
+            .order('quantity');
 
           if (tiersError) throw tiersError;
           if (tiers) {
             setPriceTiers(tiers.map(tier => ({
               id: tier.id,
-              min_quantity: tier.min_quantity,
-              max_quantity: tier.max_quantity,
+              quantity: tier.quantity,
               unit_price: parseFloat(tier.unit_price),
               discounted_unit_price: tier.discounted_unit_price ? parseFloat(tier.discounted_unit_price) : null,
             })));
@@ -321,8 +320,7 @@ export default function EditProductPage() {
         if (priceTiers.length > 0) {
           const tierRecords = priceTiers.map(tier => ({
             product_id: id,
-            min_quantity: tier.min_quantity,
-            max_quantity: tier.max_quantity,
+            quantity: tier.quantity,
             unit_price: tier.unit_price,
             discounted_unit_price: tier.discounted_unit_price,
           }));
