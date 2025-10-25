@@ -62,15 +62,28 @@ export function ProductDistributionModal({
   };
 
   const distributedSum = items.reduce((sum, item) => sum + item.quantity, 0);
-  const remainingQuantity = totalQuantity - distributedSum;
-  const isComplete = remainingQuantity === 0;
-  const isOverDistributed = remainingQuantity < 0;
 
-  const priceResult = totalQuantity > 0 && tiers.length > 0
-    ? calculateApplicablePrice(totalQuantity, tiers, product.price || 0, product.discounted_price)
+  // Para preços escalonados, a quantidade total é a soma dos itens
+  const effectiveTotalQuantity = hasTieredPricing ? distributedSum : totalQuantity;
+
+  const remainingQuantity = totalQuantity - distributedSum;
+  const isComplete = hasTieredPricing ? items.length > 0 && distributedSum > 0 : remainingQuantity === 0;
+  const isOverDistributed = !hasTieredPricing && remainingQuantity < 0;
+
+  const priceResult = effectiveTotalQuantity > 0 && tiers.length > 0
+    ? calculateApplicablePrice(effectiveTotalQuantity, tiers, product.price || 0, product.discounted_price)
     : null;
 
-  const validation = validateDistribution(totalQuantity, items);
+  // Validação adaptada para preço escalonado
+  const validation = hasTieredPricing
+    ? {
+        isValid: items.length > 0 && distributedSum > 0 && items.every(item => item.quantity > 0),
+        errors: items.length === 0 ? ['Adicione pelo menos uma variação'] :
+                distributedSum === 0 ? ['A quantidade total deve ser maior que zero'] :
+                items.some(item => item.quantity <= 0) ? ['Todas as quantidades devem ser maiores que zero'] : [],
+        warnings: []
+      }
+    : validateDistribution(totalQuantity, items);
 
   const addItem = () => {
     if (newQuantity <= 0) return;
@@ -119,7 +132,7 @@ export function ProductDistributionModal({
       quantity,
     }));
 
-    onConfirm(totalQuantity, cleanedItems);
+    onConfirm(effectiveTotalQuantity, cleanedItems);
     handleClose();
   };
 
@@ -146,10 +159,12 @@ export function ProductDistributionModal({
     setItems(updatedItems);
   };
 
+  const hasTieredPricing = product.has_tiered_pricing && tiers.length > 0;
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Package className="h-5 w-5" />
             Distribuir Variações
@@ -159,17 +174,19 @@ export function ProductDistributionModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 flex-1 overflow-hidden flex flex-col">
-          <div className="space-y-2">
-            <Label htmlFor="total-quantity">Quantidade Total Desejada</Label>
-            <Input
-              id="total-quantity"
-              type="number"
-              min="1"
-              value={totalQuantity}
-              onChange={(e) => setTotalQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-            />
-          </div>
+        <div className="space-y-3 flex-1 overflow-y-auto overflow-x-hidden px-1">
+          {!hasTieredPricing && (
+            <div className="space-y-2">
+              <Label htmlFor="total-quantity">Quantidade Total Desejada</Label>
+              <Input
+                id="total-quantity"
+                type="number"
+                min="1"
+                value={totalQuantity}
+                onChange={(e) => setTotalQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+              />
+            </div>
+          )}
 
           {priceResult && (
             <Alert className="bg-emerald-50 border-emerald-200 dark:bg-emerald-950 dark:border-emerald-800">
@@ -183,20 +200,22 @@ export function ProductDistributionModal({
                   <p className="text-lg font-bold">
                     R$ {priceResult.unitPrice.toFixed(2)} por unidade
                   </p>
-                  <p className="text-sm">
-                    Total: R$ {(priceResult.unitPrice * totalQuantity).toFixed(2)}
-                  </p>
+                  {effectiveTotalQuantity > 0 && (
+                    <p className="text-sm">
+                      Total ({effectiveTotalQuantity} {effectiveTotalQuantity === 1 ? 'unidade' : 'unidades'}): R$ {(priceResult.unitPrice * effectiveTotalQuantity).toFixed(2)}
+                    </p>
+                  )}
                 </div>
               </AlertDescription>
             </Alert>
           )}
 
-          <Separator />
+          {!hasTieredPricing && <Separator />}
 
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <Label>Distribuição de Variações</Label>
-              {items.length > 0 && (
+              {items.length > 0 && !hasTieredPricing && (
                 <Button
                   type="button"
                   variant="outline"
@@ -273,7 +292,7 @@ export function ProductDistributionModal({
             </div>
           </div>
 
-          <div className="flex-1 min-h-0 border rounded-md overflow-auto max-h-64">
+          <div className="border rounded-md overflow-auto" style={{ maxHeight: hasTieredPricing ? '200px' : '240px' }}>
             <div className="p-3 space-y-2">
               {items.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-8">
@@ -317,24 +336,26 @@ export function ProductDistributionModal({
             </div>
           </div>
 
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="font-medium">Quantidade Total:</span>
-              <span className="font-bold">{totalQuantity}</span>
+          {!hasTieredPricing && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-medium">Quantidade Total:</span>
+                <span className="font-bold">{totalQuantity}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-medium">Distribuído:</span>
+                <span className={distributedSum > totalQuantity ? 'text-destructive font-bold' : 'font-bold'}>
+                  {distributedSum}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-medium">Restante:</span>
+                <span className={remainingQuantity < 0 ? 'text-destructive font-bold' : remainingQuantity === 0 ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'font-bold'}>
+                  {remainingQuantity}
+                </span>
+              </div>
             </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="font-medium">Distribuído:</span>
-              <span className={distributedSum > totalQuantity ? 'text-destructive font-bold' : 'font-bold'}>
-                {distributedSum}
-              </span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="font-medium">Restante:</span>
-              <span className={remainingQuantity < 0 ? 'text-destructive font-bold' : remainingQuantity === 0 ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'font-bold'}>
-                {remainingQuantity}
-              </span>
-            </div>
-          </div>
+          )}
 
           {validation.errors.length > 0 && (
             <Alert variant="destructive">
@@ -363,7 +384,7 @@ export function ProductDistributionModal({
           )}
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="flex-shrink-0 pt-4">
           <Button type="button" variant="outline" onClick={handleClose}>
             Cancelar
           </Button>
@@ -371,7 +392,7 @@ export function ProductDistributionModal({
             onClick={handleConfirm}
             disabled={!validation.isValid || loading}
           >
-            {isComplete ? 'Adicionar ao Carrinho' : 'Adicionar Parcialmente'}
+            {hasTieredPricing ? 'Adicionar ao Carrinho' : (isComplete ? 'Adicionar ao Carrinho' : 'Adicionar Parcialmente')}
           </Button>
         </DialogFooter>
       </DialogContent>
