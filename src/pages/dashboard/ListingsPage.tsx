@@ -73,12 +73,14 @@ export default function ListingsPage() {
       <ListingsStatusBar
         totalCount={products.length}
         filteredCount={filteredProducts.length}
-        selectedCount={selectedProducts.length}
+        selectedCount={selectedProducts.size}
+        allSelected={allSelected}
+        onSelectAll={handleSelectAll}
       />
 
-      {selectedProducts.length > 0 && (
+      {selectedProducts.size > 0 && (
         <BulkActionsPanel
-          selectedCount={selectedProducts.length}
+          selectedCount={selectedProducts.size}
           onBulkVisibilityToggle={handleBulkVisibilityToggle}
           onBulkCategoryChange={handleBulkCategoryChange}
           onBulkBrandChange={handleBulkBrandChange}
