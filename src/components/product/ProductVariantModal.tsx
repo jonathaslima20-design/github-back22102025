@@ -379,7 +379,7 @@ export default function ProductVariantModal({
           {hasTieredPricing && pricingInfo && (
             <TieredPricingIndicator
               currentQuantity={quantity}
-              nextTierQuantity={pricingInfo.nextTier?.min_quantity || 0}
+              nextTierQuantity={pricingInfo.nextTier?.quantity || 0}
               nextTierSavings={pricingInfo.nextTierSavings}
               appliedTierSavings={pricingInfo.savings}
               currency={currency}
@@ -403,17 +403,17 @@ export default function ProductVariantModal({
                 <div className="grid grid-cols-2 gap-2">
                   {priceTiers.slice(0, 4).map((tier) => {
                     const tierPrice = tier.discounted_unit_price || tier.unit_price;
-                    const tierTotal = tierPrice * tier.min_quantity;
+                    const tierTotal = tierPrice * tier.quantity;
                     const basePrice = product.discounted_price || product.price;
-                    const savings = (basePrice * tier.min_quantity) - tierTotal;
-                    const savingsPercent = Math.round((savings / (basePrice * tier.min_quantity)) * 100);
+                    const savings = (basePrice * tier.quantity) - tierTotal;
+                    const savingsPercent = Math.round((savings / (basePrice * tier.quantity)) * 100);
 
                     return (
                       <Button
                         key={tier.id}
-                        variant={quantity === tier.min_quantity ? "default" : "outline"}
+                        variant={quantity === tier.quantity ? "default" : "outline"}
                         className="h-auto py-2 px-3 flex flex-col items-start"
-                        onClick={() => setQuantity(tier.min_quantity)}
+                        onClick={() => setQuantity(tier.quantity)}
                       >
                         <div className="text-xs font-semibold">{formatPriceTierRange(tier)}</div>
                         <div className="text-xs text-muted-foreground">

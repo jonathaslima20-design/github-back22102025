@@ -53,8 +53,7 @@ type ProductFormData = z.infer<typeof productSchema>;
 
 type PriceTier = {
   id?: string;
-  min_quantity: number;
-  max_quantity: number | null;
+  quantity: number;
   unit_price: number;
   discounted_unit_price: number | null;
 };
@@ -71,7 +70,7 @@ export default function CreateProductPage() {
   }>>([]);
   const [pricingMode, setPricingMode] = useState<'simple' | 'tiered'>('simple');
   const [priceTiers, setPriceTiers] = useState<PriceTier[]>([
-    { min_quantity: 1, max_quantity: null, unit_price: 0, discounted_unit_price: null }
+    { quantity: 1, unit_price: 0, discounted_unit_price: null }
   ]);
 
   const form = useForm<ProductFormData>({
@@ -186,8 +185,7 @@ export default function CreateProductPage() {
       if (pricingMode === 'tiered' && priceTiers.length > 0) {
         const tierRecords = priceTiers.map(tier => ({
           product_id: product.id,
-          min_quantity: tier.min_quantity,
-          max_quantity: tier.max_quantity,
+          quantity: tier.quantity,
           unit_price: tier.unit_price,
           discounted_unit_price: tier.discounted_unit_price,
         }));

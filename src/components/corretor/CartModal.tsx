@@ -360,7 +360,7 @@ export default function CartModal({
                         <div className="mb-2">
                           <TieredPricingIndicator
                             currentQuantity={item.quantity}
-                            nextTierQuantity={pricingInfo.nextTier?.min_quantity || 0}
+                            nextTierQuantity={pricingInfo.nextTier?.quantity || 0}
                             nextTierSavings={pricingInfo.nextTierSavings}
                             appliedTierSavings={pricingInfo.savings}
                             currency={currency}
