@@ -306,9 +306,9 @@ export default function ProductVariantModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] flex flex-col">
         <>
-          <DialogHeader>
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle className="flex items-center gap-2">
               <ShoppingCart className="h-5 w-5" />
               Selecionar Opções
@@ -318,7 +318,7 @@ export default function ProductVariantModal({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-6">
+          <div className="space-y-6 overflow-y-auto pr-2 -mr-2">
           {/* Product Image and Price */}
           <div className="flex gap-4">
             <div className="w-20 h-20 bg-white rounded-lg overflow-hidden border border-gray-200 shadow-sm flex-shrink-0">
@@ -745,8 +745,10 @@ export default function ProductVariantModal({
             </span>
           </div>
 
+          </div>
+
           {/* Action Buttons */}
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-shrink-0 pt-4 border-t">
             <Button
               variant="outline"
               onClick={() => onOpenChange(false)}
@@ -762,7 +764,6 @@ export default function ProductVariantModal({
               <ShoppingCart className="h-4 w-4 mr-2" />
               Adicionar {quantity > 1 ? `(${quantity})` : ''}
             </Button>
-          </div>
           </div>
         </>
       </DialogContent>
