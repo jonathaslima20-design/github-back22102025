@@ -86,6 +86,7 @@ export default function ListingsPage() {
           onBulkImageCompression={handleBulkImageCompression}
           onClearSelection={() => setSelectedProducts([])}
           loading={bulkActionLoading}
+          userId={user?.id}
         />
       )}
 
