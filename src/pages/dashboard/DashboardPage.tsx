@@ -1,16 +1,37 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Package, TrendingUp, Users, DollarSign } from 'lucide-react';
+import { Package, TrendingUp, Users, DollarSign, Loader2, RefreshCw } from 'lucide-react';
+import { useDashboardStats } from '@/hooks/useDashboardStats';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const { totalProducts, totalViews, uniqueVisitors, totalLeads, loading, error, refresh } = useDashboardStats();
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <p className="text-muted-foreground">Bem-vindo de volta, {user?.name || 'Usuário'}!</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Dashboard</h1>
+          <p className="text-muted-foreground">Bem-vindo de volta, {user?.name || 'Usuário'}!</p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={refresh}
+          disabled={loading}
+        >
+          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+          Atualizar
+        </Button>
       </div>
+
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
@@ -19,8 +40,14 @@ export default function DashboardPage() {
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-muted-foreground">produtos cadastrados</p>
+            {loading ? (
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{totalProducts}</div>
+                <p className="text-xs text-muted-foreground">produtos cadastrados</p>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -30,8 +57,14 @@ export default function DashboardPage() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-muted-foreground">nos últimos 30 dias</p>
+            {loading ? (
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{totalViews}</div>
+                <p className="text-xs text-muted-foreground">nos últimos 30 dias</p>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -41,8 +74,14 @@ export default function DashboardPage() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-muted-foreground">visitantes únicos</p>
+            {loading ? (
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{uniqueVisitors}</div>
+                <p className="text-xs text-muted-foreground">visitantes únicos</p>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -52,8 +91,14 @@ export default function DashboardPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-muted-foreground">contatos recebidos</p>
+            {loading ? (
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{totalLeads}</div>
+                <p className="text-xs text-muted-foreground">contatos recebidos</p>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
