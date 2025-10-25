@@ -13,11 +13,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { CurrencyInput } from '@/components/ui/currency-input';
 import { DiscountPriceInput } from '@/components/ui/discount-price-input';
-import { ColorSelector } from '@/components/ui/color-selector';
-import { ShoeSizeSelector } from '@/components/ui/shoe-size-selector';
-import { ApparelSizeSelector } from '@/components/ui/apparel-size-selector';
-import { CustomColorSelector } from '@/components/ui/custom-color-selector';
-import { CustomSizeInput } from '@/components/ui/custom-size-input';
+import { CategorySelector } from '@/components/ui/category-selector';
+import { GenderSelector } from '@/components/ui/gender-selector';
+import { SizesColorsSelector } from '@/components/ui/sizes-colors-selector';
 import { ImageCropperProduct } from '@/components/ui/image-cropper-product';
 import { TieredPricingManager } from '@/components/ui/tiered-pricing-manager';
 import { PricingModeToggle } from '@/components/ui/pricing-mode-toggle';
@@ -259,7 +257,11 @@ export default function CreateProductPage() {
                   <FormItem>
                     <FormLabel>Categoria</FormLabel>
                     <FormControl>
-                      <Input placeholder="Ex: Calçados, Roupas, Acessórios" {...field} value={field.value.join(', ')} onChange={(e) => field.onChange(e.target.value.split(',').map(s => s.trim()))} />
+                      <CategorySelector
+                        value={field.value}
+                        onChange={field.onChange}
+                        userId={user?.id}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -288,7 +290,10 @@ export default function CreateProductPage() {
                     <FormItem>
                       <FormLabel>Gênero</FormLabel>
                       <FormControl>
-                        <Input placeholder="Ex: Masculino, Feminino, Unissex" {...field} />
+                        <GenderSelector
+                          value={field.value || ''}
+                          onChange={field.onChange}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -302,42 +307,13 @@ export default function CreateProductPage() {
             <CardHeader>
               <CardTitle>Tamanhos e Cores</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <FormField
-                control={form.control}
-                name="colors"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Cores Disponíveis (Opcional)</FormLabel>
-                    <FormControl>
-                      <CustomColorSelector
-                        selectedColors={field.value}
-                        onChange={field.onChange}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="sizes"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tamanhos</FormLabel>
-                    <FormControl>
-                      <CustomSizeInput
-                        selectedSizes={field.value}
-                        onChange={field.onChange}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Tamanhos de Vestuário: PP, P, M, G, GG, XG, XXG | Tamanhos de Calçados: 17 a 43
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
+            <CardContent>
+              <SizesColorsSelector
+                colors={form.watch('colors')}
+                onColorsChange={(colors) => form.setValue('colors', colors)}
+                sizes={form.watch('sizes')}
+                onSizesChange={(sizes) => form.setValue('sizes', sizes)}
+                userId={user?.id}
               />
             </CardContent>
           </Card>
