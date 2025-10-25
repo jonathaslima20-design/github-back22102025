@@ -59,6 +59,8 @@ export default function ProductVariantModal({
   const [hasTieredPricing, setHasTieredPricing] = useState(false);
   const [loadingTiers, setLoadingTiers] = useState(false);
   const [minQuantity, setMinQuantity] = useState(1);
+  const [selectedColor, setSelectedColor] = useState<string | undefined>();
+  const [selectedSize, setSelectedSize] = useState<string | undefined>();
   const { addToCart, hasVariant, getVariantQuantity } = useCart();
   const { t } = useTranslation(language);
 
