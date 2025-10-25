@@ -307,11 +307,11 @@ export function TieredPricingManager({
       )}
 
       {tiers.length > 0 && (
-        <Card className="p-4 md:p-6 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-2 border-blue-200 dark:border-blue-800">
+        <Card className="p-4 md:p-6">
           <div className="space-y-4">
             <div>
-              <h3 className="text-lg font-semibold mb-2 text-blue-900 dark:text-blue-100">Faixas de Preço Cadastradas</h3>
-              <p className="text-sm text-blue-700 dark:text-blue-300">
+              <h3 className="text-lg font-semibold mb-2">Faixas de Preço Cadastradas</h3>
+              <p className="text-sm text-muted-foreground">
                 Visualize e gerencie seus preços por quantidade
               </p>
             </div>

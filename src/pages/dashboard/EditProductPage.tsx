@@ -22,6 +22,8 @@ import { PricingModeToggle } from '@/components/ui/pricing-mode-toggle';
 import { ProductImageManager } from '@/components/product/ProductImageManager';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { ArrowLeft, Upload, X } from 'lucide-react';
 import { uploadImage } from '@/lib/image';
@@ -72,6 +74,7 @@ export default function EditProductPage() {
   const [pricingMode, setPricingMode] = useState<'simple' | 'tiered'>('simple');
   const [priceTiers, setPriceTiers] = useState<PriceTier[]>([]);
   const [isPriceTiersValid, setIsPriceTiersValid] = useState(true);
+  const [isSizesColorsOpen, setIsSizesColorsOpen] = useState(false);
 
   const form = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
@@ -476,20 +479,29 @@ export default function EditProductPage() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Tamanhos e Cores</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <SizesColorsSelector
-                colors={form.watch('colors')}
-                onColorsChange={(colors) => form.setValue('colors', colors)}
-                sizes={form.watch('sizes')}
-                onSizesChange={(sizes) => form.setValue('sizes', sizes)}
-                userId={user?.id}
-              />
-            </CardContent>
-          </Card>
+          <Collapsible open={isSizesColorsOpen} onOpenChange={setIsSizesColorsOpen}>
+            <Card>
+              <CollapsibleTrigger className="w-full">
+                <CardHeader className="cursor-pointer hover:bg-accent/50 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <CardTitle>Tamanhos e Cores</CardTitle>
+                    <ChevronDown className={`h-5 w-5 transition-transform duration-200 ${isSizesColorsOpen ? 'transform rotate-180' : ''}`} />
+                  </div>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent>
+                  <SizesColorsSelector
+                    colors={form.watch('colors')}
+                    onColorsChange={(colors) => form.setValue('colors', colors)}
+                    sizes={form.watch('sizes')}
+                    onSizesChange={(sizes) => form.setValue('sizes', sizes)}
+                    userId={user?.id}
+                  />
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
 
           <Card>
             <CardHeader>
