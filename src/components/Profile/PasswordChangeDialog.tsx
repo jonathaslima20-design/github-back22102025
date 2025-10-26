@@ -79,7 +79,7 @@ export function PasswordChangeDialog({ user, open, onOpenChange }: PasswordChang
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
-        <Button type="button" variant="outline">
+        <Button type="button" variant="outline" size="lg" className="w-full sm:w-auto">
           <Key className="mr-2 h-4 w-4" />
           Alterar Senha
         </Button>

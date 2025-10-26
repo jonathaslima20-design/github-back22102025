@@ -9,23 +9,23 @@ export default function SettingsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 sm:px-6 py-6 max-w-5xl">
+      <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-6 max-w-5xl">
         <Card className="border shadow-sm">
-          <div className="p-8">
+          <div className="p-4 sm:p-8">
             {/* Header */}
-            <div className="mb-6">
-              <h1 className="text-2xl font-semibold mb-1">Configurações</h1>
-              <p className="text-sm text-muted-foreground">
+            <div className="mb-4 sm:mb-6">
+              <h1 className="text-xl sm:text-2xl font-semibold mb-1">Configurações</h1>
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 Gerencie suas informações pessoais e configurações da vitrine
               </p>
             </div>
 
-            {/* Tabs */}
-            <div className="flex gap-4 border-b mb-8">
+            {/* Tabs - Improved mobile layout */}
+            <div className="flex gap-1 sm:gap-4 border-b mb-6 sm:mb-8 -mx-4 sm:mx-0 px-4 sm:px-0">
               <button
                 onClick={() => setActiveTab('profile')}
                 className={cn(
-                  'px-4 py-3 text-sm font-medium transition-colors relative',
+                  'flex-1 sm:flex-none px-3 sm:px-4 py-3 text-sm font-medium transition-all relative whitespace-nowrap',
                   activeTab === 'profile'
                     ? 'text-foreground'
                     : 'text-muted-foreground hover:text-foreground'
@@ -33,13 +33,13 @@ export default function SettingsPage() {
               >
                 Perfil
                 {activeTab === 'profile' && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-foreground" />
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-t-full" />
                 )}
               </button>
               <button
                 onClick={() => setActiveTab('storefront')}
                 className={cn(
-                  'px-4 py-3 text-sm font-medium transition-colors relative',
+                  'flex-1 sm:flex-none px-3 sm:px-4 py-3 text-sm font-medium transition-all relative whitespace-nowrap',
                   activeTab === 'storefront'
                     ? 'text-foreground'
                     : 'text-muted-foreground hover:text-foreground'
@@ -47,7 +47,7 @@ export default function SettingsPage() {
               >
                 Vitrine
                 {activeTab === 'storefront' && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-foreground" />
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-t-full" />
                 )}
               </button>
             </div>

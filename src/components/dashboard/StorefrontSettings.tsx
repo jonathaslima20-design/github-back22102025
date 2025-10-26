@@ -13,21 +13,27 @@ export function StorefrontSettings() {
   return (
     <div className="space-y-6">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="filters">Filtros</TabsTrigger>
-          <TabsTrigger value="organization">Organização</TabsTrigger>
-          <TabsTrigger value="tracking">Rastreamento</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3 h-auto gap-1">
+          <TabsTrigger value="filters" className="text-xs sm:text-sm py-2 sm:py-2.5">
+            Filtros
+          </TabsTrigger>
+          <TabsTrigger value="organization" className="text-xs sm:text-sm py-2 sm:py-2.5">
+            Organização
+          </TabsTrigger>
+          <TabsTrigger value="tracking" className="text-xs sm:text-sm py-2 sm:py-2.5">
+            Rastreamento
+          </TabsTrigger>
         </TabsList>
-        
-        <TabsContent value="filters" className="mt-6">
+
+        <TabsContent value="filters" className="mt-4 sm:mt-6">
           <StorefrontFiltersManager />
         </TabsContent>
-        
-        <TabsContent value="organization" className="mt-6">
+
+        <TabsContent value="organization" className="mt-4 sm:mt-6">
           <CategoryDisplaySettings />
         </TabsContent>
-        
-        <TabsContent value="tracking" className="mt-6">
+
+        <TabsContent value="tracking" className="mt-4 sm:mt-6">
           <TrackingSettingsContent />
         </TabsContent>
       </Tabs>

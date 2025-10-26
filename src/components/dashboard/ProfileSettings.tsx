@@ -444,7 +444,7 @@ export function ProfileSettings() {
             setIsDarkTheme={setIsDarkTheme}
           />
 
-          <div className="flex justify-end space-x-4 pt-6">
+          <div className="flex flex-col sm:flex-row sm:justify-end gap-3 sm:gap-4 pt-6">
             <PasswordChangeDialog
               user={user}
               open={showPasswordDialog}
@@ -455,6 +455,7 @@ export function ProfileSettings() {
               type="submit"
               disabled={saving}
               size="lg"
+              className="w-full sm:w-auto"
             >
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Salvar Alterações
