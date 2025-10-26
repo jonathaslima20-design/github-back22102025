@@ -451,3 +451,69 @@ body {
     box-shadow: -2px 0 4px -2px rgba(0, 0, 0, 0.3);
   }
 }
+
+/* Discrete mobile scrollbar for main content */
+@media (max-width: 768px) {
+  /* WebKit browsers (Safari, Chrome on mobile) */
+  body::-webkit-scrollbar,
+  html::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  body::-webkit-scrollbar-track,
+  html::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  body::-webkit-scrollbar-thumb,
+  html::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.15);
+    border-radius: 2px;
+    transition: background 0.3s ease, opacity 0.3s ease;
+  }
+
+  body::-webkit-scrollbar-thumb:hover,
+  html::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.3);
+  }
+
+  /* Scrollbar appears subtly when scrolling */
+  body::-webkit-scrollbar-thumb:active,
+  html::-webkit-scrollbar-thumb:active {
+    background: hsl(var(--muted-foreground) / 0.4);
+  }
+
+  /* Firefox scrollbar styles */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.15) transparent;
+  }
+
+  /* Apply to all scrollable containers */
+  .overflow-auto::-webkit-scrollbar,
+  .overflow-y-auto::-webkit-scrollbar,
+  .overflow-x-auto::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  .overflow-auto::-webkit-scrollbar-track,
+  .overflow-y-auto::-webkit-scrollbar-track,
+  .overflow-x-auto::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .overflow-auto::-webkit-scrollbar-thumb,
+  .overflow-y-auto::-webkit-scrollbar-thumb,
+  .overflow-x-auto::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.15);
+    border-radius: 2px;
+    transition: background 0.3s ease;
+  }
+
+  .overflow-auto::-webkit-scrollbar-thumb:hover,
+  .overflow-y-auto::-webkit-scrollbar-thumb:hover,
+  .overflow-x-auto::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.3);
+  }
+}
