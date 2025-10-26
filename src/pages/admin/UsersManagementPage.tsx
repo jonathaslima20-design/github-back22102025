@@ -225,8 +225,25 @@ export default function UsersManagementPage() {
       {selectedUsers.size > 0 && (
         <FloatingUserBulkActions
           selectedCount={selectedUsers.size}
-          onBulkAction={(action) => handleBulkAction(action, Array.from(selectedUsers))}
+          selectedUsers={users.filter(user => selectedUsers.has(user.id))}
           onClearSelection={() => setSelectedUsers(new Set())}
+          onBulkActivatePlan={async (planId: string) => {
+            // TODO: Implement bulk plan activation
+            console.log('Bulk activate plan:', planId);
+          }}
+          onBulkBlockUsers={async () => {
+            await handleBulkAction('block', Array.from(selectedUsers));
+          }}
+          onBulkUnblockUsers={async () => {
+            await handleBulkAction('unblock', Array.from(selectedUsers));
+          }}
+          onBulkChangeRole={async (newRole: string) => {
+            // TODO: Implement bulk role change
+            console.log('Bulk change role:', newRole);
+          }}
+          loading={loading}
+          subscriptionPlans={[]}
+          currentUserRole={currentUser?.role || 'user'}
         />
       )}
     </div>
