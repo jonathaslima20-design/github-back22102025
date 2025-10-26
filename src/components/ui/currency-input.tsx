@@ -1,9 +1,9 @@
 import React from 'react';
 import { Input } from '@/components/ui/input';
 
-interface CurrencyInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  value?: string;
-  onChange?: (value: string) => void;
+interface CurrencyInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange'> {
+  value?: number | string;
+  onChange?: (value: number) => void;
 }
 
 export function CurrencyInput({
@@ -11,35 +11,42 @@ export function CurrencyInput({
   onChange,
   ...props
 }: CurrencyInputProps) {
+  const formatValue = (val: number | string | undefined): string => {
+    if (val === undefined || val === null || val === '') return '';
+
+    const numValue = typeof val === 'string' ? parseFloat(val) : val;
+
+    if (isNaN(numValue)) return '';
+
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(numValue);
+  };
+
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     let newValue = event.target.value;
-    
+
     // Remove any existing formatting
     newValue = newValue.replace(/[^\d]/g, '');
-    
-    // Convert to number and format
+
+    // Convert to number
     if (newValue) {
       const number = parseInt(newValue, 10);
-      if (!isNaN(number)) {
-        // Format with thousands separator and decimal places
-        newValue = new Intl.NumberFormat('pt-BR', {
-          style: 'currency',
-          currency: 'BRL',
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        }).format(number / 100);
+      if (!isNaN(number) && onChange) {
+        onChange(number / 100);
       }
-    }
-    
-    if (onChange) {
-      onChange(newValue);
+    } else if (onChange) {
+      onChange(0);
     }
   };
 
   return (
     <Input
       {...props}
-      value={value}
+      value={formatValue(value)}
       onChange={handleChange}
       inputMode="numeric"
     />
