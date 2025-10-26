@@ -165,7 +165,7 @@ export default function CreateUserPage() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="vendedor">Vendedor</SelectItem>
+                          <SelectItem value="corretor">Vendedor</SelectItem>
                           <SelectItem value="admin">Administrador</SelectItem>
                         </SelectContent>
                       </Select>
