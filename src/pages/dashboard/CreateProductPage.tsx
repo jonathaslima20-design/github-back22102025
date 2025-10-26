@@ -359,77 +359,69 @@ export default function CreateProductPage() {
 
               {pricingMode === 'simple' ? (
                 <div className="space-y-4">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-base">Preço</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <FormField
-                        control={form.control}
-                        name="price"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Preço *</FormLabel>
-                            <FormControl>
-                              <CurrencyInput
-                                value={field.value}
-                                onChange={field.onChange}
-                                placeholder="R$ 0,00"
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                  <FormField
+                    control={form.control}
+                    name="price"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Preço original do produto *</FormLabel>
+                        <FormControl>
+                          <CurrencyInput
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder="R$ 0,00"
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Preço de venda do produto
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                      <FormField
-                        control={form.control}
-                        name="is_starting_price"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                            <div className="space-y-0.5">
-                              <FormLabel className="text-base">Preço "A partir de"</FormLabel>
-                              <FormDescription>
-                                Exibir como "A partir de R$ {form.watch('price').toFixed(2)}"
-                              </FormDescription>
-                            </div>
-                            <FormControl>
-                              <Switch
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                              />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-                    </CardContent>
-                  </Card>
+                  <FormField
+                    control={form.control}
+                    name="featured_offer_price"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Preço promocional (deve ser menor que o preço original)</FormLabel>
+                        <FormControl>
+                          <DiscountPriceInput
+                            value={field.value}
+                            onChange={field.onChange}
+                            originalPrice={form.watch('price')}
+                            placeholder="R$ 0,00"
+                          />
+                        </FormControl>
+                        <FormDescription className="text-muted-foreground">
+                          Preço promocional opcional. Se preenchido, será exibido como oferta especial.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-base">Preço Promocional</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <FormField
-                        control={form.control}
-                        name="featured_offer_price"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Preço Promocional</FormLabel>
-                            <FormControl>
-                              <DiscountPriceInput
-                                value={field.value}
-                                onChange={field.onChange}
-                                originalPrice={form.watch('price')}
-                                placeholder="R$ 0,00"
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </CardContent>
-                  </Card>
+                  <FormField
+                    control={form.control}
+                    name="is_starting_price"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start justify-between rounded-lg border p-4">
+                        <div className="space-y-0.5">
+                          <FormLabel className="text-base">Preço inicial</FormLabel>
+                          <FormDescription>
+                            Marque esta opção se o preço informado é um valor inicial ("A partir de")
+                          </FormDescription>
+                        </div>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
                 </div>
               ) : (
                 <TieredPricingManager
