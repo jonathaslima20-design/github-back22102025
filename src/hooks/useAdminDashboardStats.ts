@@ -60,7 +60,7 @@ export function useAdminDashboardStats() {
 
         supabase
           .from('subscriptions')
-          .select('amount')
+          .select('monthly_price')
           .eq('status', 'active')
           .gte('created_at', thirtyDaysAgo.toISOString()),
       ]);
@@ -76,7 +76,7 @@ export function useAdminDashboardStats() {
       }
 
       const totalRevenue = subscriptionsResponse.data?.reduce(
-        (sum, sub) => sum + (sub.amount || 0),
+        (sum, sub) => sum + (sub.monthly_price || 0),
         0
       ) || 0;
 
