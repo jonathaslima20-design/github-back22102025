@@ -438,7 +438,7 @@ export default function ProductDetailsPage() {
                 </div>
               )}
 
-              {/* Product Variants Display */
+              {/* Product Variants Display */}
               {hasOptions && (
                 <div className="mt-8 space-y-6">
                   {/* Available Colors */}
@@ -597,7 +597,7 @@ export default function ProductDetailsPage() {
                 </div>
               )}
 
-              {/* Description */
+              {/* Description */}
               <div className="mt-8">
                 <ItemDescription description={product.description} isRichText={true} />
               </div>
