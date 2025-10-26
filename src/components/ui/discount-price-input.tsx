@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { AlertTriangle } from 'lucide-react';
 import { getCurrencySymbol, getLocaleConfig, type SupportedLanguage, type SupportedCurrency } from '@/lib/i18n';
 
-interface DiscountPriceInputProps {
+interface DiscountPriceInputPropsOld {
   originalPrice: string;
   discountedPrice: string;
   onOriginalPriceChange: (value: string) => void;
@@ -15,7 +15,29 @@ interface DiscountPriceInputProps {
   isOptional?: boolean;
 }
 
-export function DiscountPriceInput({
+interface DiscountPriceInputPropsNew {
+  value?: number;
+  onChange?: (value: number | undefined) => void;
+  originalPrice: number;
+  placeholder?: string;
+  currency?: SupportedCurrency;
+  locale?: SupportedLanguage;
+}
+
+type DiscountPriceInputProps = DiscountPriceInputPropsOld | DiscountPriceInputPropsNew;
+
+function isOldProps(props: DiscountPriceInputProps): props is DiscountPriceInputPropsOld {
+  return 'discountedPrice' in props;
+}
+
+export function DiscountPriceInput(props: DiscountPriceInputProps) {
+  if (isOldProps(props)) {
+    return <DiscountPriceInputOld {...props} />;
+  }
+  return <DiscountPriceInputNew {...props} />;
+}
+
+function DiscountPriceInputOld({
   originalPrice,
   discountedPrice,
   onOriginalPriceChange,
@@ -23,7 +45,7 @@ export function DiscountPriceInput({
   currency = 'BRL',
   locale = 'pt-BR',
   isOptional = false
-}: DiscountPriceInputProps) {
+}: DiscountPriceInputPropsOld) {
   // Get locale configuration and currency symbol
   const localeConfig = getLocaleConfig(locale);
   const currencySymbol = getCurrencySymbol(currency, locale);
@@ -123,6 +145,88 @@ export function DiscountPriceInput({
             <div className="flex items-center gap-2 text-destructive">
               <AlertTriangle className="h-4 w-4" />
               <span className="text-sm">O preço com desconto deve ser menor que o preço original</span>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DiscountPriceInputNew({
+  value,
+  onChange,
+  originalPrice,
+  placeholder = 'R$ 0,00',
+  currency = 'BRL',
+  locale = 'pt-BR'
+}: DiscountPriceInputPropsNew) {
+  const localeConfig = getLocaleConfig(locale);
+  const currencySymbol = getCurrencySymbol(currency, locale);
+
+  const numberFormatConfig = React.useMemo(() => ({
+    thousandSeparator: localeConfig.thousandsSeparator,
+    decimalSeparator: localeConfig.decimalSeparator,
+    prefix: currencySymbol + ' ',
+    decimalScale: 2,
+    fixedDecimalScale: true,
+    allowNegative: false,
+    allowLeadingZeros: false,
+  }), [localeConfig.thousandsSeparator, localeConfig.decimalSeparator, currencySymbol]);
+
+  const discountedValue = value || 0;
+  const originalValue = originalPrice || 0;
+
+  const hasDiscount = discountedValue > 0 && originalValue > 0;
+  const isValidDiscount = hasDiscount && discountedValue < originalValue;
+  const discountPercentage = isValidDiscount
+    ? Math.round(((originalValue - discountedValue) / originalValue) * 100)
+    : 0;
+  const savings = isValidDiscount ? originalValue - discountedValue : 0;
+
+  const handleDiscountedPriceChange = React.useCallback((values: any) => {
+    const { floatValue } = values;
+    if (onChange) {
+      onChange(floatValue);
+    }
+  }, [onChange]);
+
+  return (
+    <div className="space-y-2">
+      <NumericFormat
+        {...numberFormatConfig}
+        value={value || ''}
+        onValueChange={handleDiscountedPriceChange}
+        placeholder={placeholder}
+        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+      />
+      <FormDescription>
+        Preço promocional opcional. Se preenchido, será exibido como oferta especial.
+      </FormDescription>
+
+      {hasDiscount && (
+        <div className="mt-2 p-3 bg-muted rounded-lg">
+          {isValidDiscount ? (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Badge className="bg-green-600 text-white">
+                  -{discountPercentage}% OFF
+                </Badge>
+                <span className="text-sm font-medium text-green-700 dark:text-green-400">
+                  Economia de {currencySymbol} {savings.toLocaleString(locale, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                  })}
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                O desconto será destacado na vitrine com um badge verde
+              </p>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <span className="text-sm">O preço promocional deve ser menor que o preço original</span>
             </div>
           )}
         </div>
