@@ -5,19 +5,22 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
+import { PasswordInput } from '@/components/ui/password-input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { ArrowLeft } from 'lucide-react';
 
 const userSchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório'),
   email: z.string().email('Email inválido'),
-  password: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres'),
+  password: z.string().min(6, 'Mínimo de 6 caracteres'),
+  confirmPassword: z.string().min(6, 'Mínimo de 6 caracteres'),
+  role: z.string().min(1, 'Função é obrigatória'),
   whatsapp: z.string().optional(),
-  is_admin: z.boolean().default(false),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "As senhas não coincidem",
+  path: ["confirmPassword"],
 });
 
 type UserFormData = z.infer<typeof userSchema>;
@@ -32,14 +35,17 @@ export default function CreateUserPage() {
       name: '',
       email: '',
       password: '',
+      confirmPassword: '',
+      role: '',
       whatsapp: '',
-      is_admin: false,
     },
   });
 
   const onSubmit = async (data: UserFormData) => {
     setLoading(true);
     try {
+      const isAdmin = data.role === 'admin';
+
       const { error } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
@@ -47,7 +53,7 @@ export default function CreateUserPage() {
           data: {
             name: data.name,
             whatsapp: data.whatsapp,
-            is_admin: data.is_admin,
+            is_admin: isAdmin,
           },
         },
       });
@@ -65,32 +71,30 @@ export default function CreateUserPage() {
   };
 
   return (
-    <div className="container mx-auto p-6 max-w-2xl space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
+    <div className="container mx-auto p-6 max-w-3xl">
+      <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold">Criar Usuário</h1>
-          <p className="text-muted-foreground">Adicione um novo usuário ao sistema</p>
+          <h1 className="text-2xl font-semibold text-foreground">Criar Novo Usuário</h1>
+          <p className="text-sm text-muted-foreground mt-1">Cadastre um novo usuário e configure sua assinatura</p>
         </div>
-      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Informações do Usuário</CardTitle>
-        </CardHeader>
-        <CardContent>
+        <div className="bg-card rounded-lg border p-6">
+          <h2 className="text-lg font-semibold mb-6">Informações do Usuário</h2>
+
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
               <FormField
                 control={form.control}
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Nome *</FormLabel>
+                    <FormLabel className="text-sm font-normal text-foreground">Nome Completo</FormLabel>
                     <FormControl>
-                      <Input placeholder="Nome completo" {...field} />
+                      <Input
+                        placeholder=""
+                        className="h-11 bg-background"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -102,9 +106,14 @@ export default function CreateUserPage() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email *</FormLabel>
+                    <FormLabel className="text-sm font-normal text-foreground">Email</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="email@exemplo.com" {...field} />
+                      <Input
+                        type="email"
+                        placeholder="jonathaslima@live.com"
+                        className="h-11 bg-muted/50"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -116,10 +125,57 @@ export default function CreateUserPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Senha *</FormLabel>
+                    <FormLabel className="text-sm font-normal text-foreground">Senha</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="••••••" {...field} />
+                      <PasswordInput
+                        placeholder="••••••"
+                        className="h-11 bg-muted/50"
+                        {...field}
+                      />
                     </FormControl>
+                    <FormDescription className="text-xs text-muted-foreground mt-1">
+                      Mínimo de 6 caracteres
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="confirmPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-normal text-foreground">Confirmar Senha</FormLabel>
+                    <FormControl>
+                      <PasswordInput
+                        placeholder=""
+                        className="h-11 bg-background"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="role"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-normal text-foreground">Função</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="h-11 bg-background">
+                          <SelectValue placeholder="Vendedor" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="vendedor">Vendedor</SelectItem>
+                        <SelectItem value="admin">Administrador</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -130,48 +186,40 @@ export default function CreateUserPage() {
                 name="whatsapp"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>WhatsApp</FormLabel>
+                    <FormLabel className="text-sm font-normal text-foreground">WhatsApp</FormLabel>
                     <FormControl>
-                      <Input placeholder="(00) 00000-0000" {...field} />
+                      <Input
+                        placeholder="(99) 99999-9999"
+                        className="h-11 bg-background"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="is_admin"
-                render={({ field }) => (
-                  <FormItem className="flex items-center justify-between rounded-lg border p-4">
-                    <div className="space-y-0.5">
-                      <FormLabel>Administrador</FormLabel>
-                      <div className="text-sm text-muted-foreground">
-                        Conceder privilégios de administrador
-                      </div>
-                    </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-
-              <div className="flex gap-2 pt-4">
-                <Button type="submit" disabled={loading}>
+              <div className="flex gap-3 pt-4">
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className="h-11 px-6"
+                >
                   {loading ? 'Criando...' : 'Criar Usuário'}
                 </Button>
-                <Button type="button" variant="outline" onClick={() => navigate(-1)}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => navigate(-1)}
+                  className="h-11 px-6"
+                >
                   Cancelar
                 </Button>
               </div>
             </form>
           </Form>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }
