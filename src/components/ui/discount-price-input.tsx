@@ -174,7 +174,7 @@ function DiscountPriceInputNew({
     allowLeadingZeros: false,
   }), [localeConfig.thousandsSeparator, localeConfig.decimalSeparator, currencySymbol]);
 
-  const discountedValue = value || 0;
+  const discountedValue = value ?? 0;
   const originalValue = originalPrice || 0;
 
   const hasDiscount = discountedValue > 0 && originalValue > 0;
@@ -191,11 +191,13 @@ function DiscountPriceInputNew({
     }
   }, [onChange]);
 
+  const displayValue = value !== undefined && value !== null ? value : '';
+
   return (
     <div className="space-y-2">
       <NumericFormat
         {...numberFormatConfig}
-        value={value || ''}
+        value={displayValue}
         onValueChange={handleDiscountedPriceChange}
         placeholder={placeholder}
         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"

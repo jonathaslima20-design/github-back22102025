@@ -417,7 +417,7 @@ export default function CreateProductPage() {
                             <FormLabel>Preço Promocional</FormLabel>
                             <FormControl>
                               <DiscountPriceInput
-                                value={field.value || 0}
+                                value={field.value}
                                 onChange={field.onChange}
                                 originalPrice={form.watch('price')}
                                 placeholder="R$ 0,00"
