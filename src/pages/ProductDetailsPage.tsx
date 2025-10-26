@@ -69,11 +69,16 @@ export default function ProductDetailsPage() {
           .select(`
             *,
             product_images (
-              url
+              id,
+              url,
+              is_featured,
+              media_type,
+              display_order
             )
           `)
           .eq('id', productId)
           .order('is_featured', { referencedTable: 'product_images', ascending: false })
+          .order('display_order', { referencedTable: 'product_images', ascending: true })
           .single();
 
         if (productError) throw productError;
@@ -229,9 +234,19 @@ export default function ProductDetailsPage() {
 
   // Create array of images, using featured image or default if no images
   // The images are now ordered with featured first due to the query ordering
-  const galleryImages = product.product_images?.length 
-    ? product.product_images.map((img: any) => img.url)
-    : [product.featured_image_url || "https://images.pexels.com/photos/3802510/pexels-photo-3802510.jpeg"];
+  const galleryMedia = product.product_images?.length
+    ? product.product_images.map((img: any) => ({
+        id: img.id,
+        url: img.url,
+        is_featured: img.is_featured,
+        media_type: img.media_type || 'image'
+      }))
+    : [{
+        id: 'default',
+        url: product.featured_image_url || "https://images.pexels.com/photos/3802510/pexels-photo-3802510.jpeg",
+        is_featured: true,
+        media_type: 'image' as const
+      }];
 
   // Determinar preços e desconto
   const hasDiscount = product.discounted_price && product.discounted_price < product.price;
@@ -401,10 +416,9 @@ export default function ProductDetailsPage() {
               </div>
 
               {/* Photo Gallery */}
-              <ImageGallery 
-                images={galleryImages}
+              <ImageGallery
+                media={galleryMedia}
                 title={product.title}
-                videoUrl={product.video_url}
               />
 
               {/* Product Variants Display */}

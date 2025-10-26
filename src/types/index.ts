@@ -37,10 +37,14 @@ export interface User {
 export type ProductStatus = 'disponivel' | 'vendido' | 'reservado';
 export type ProductGender = 'masculino' | 'feminino' | 'unissex';
 
+export type MediaType = 'image' | 'video';
+
 export interface ProductImage {
   id: string;
   url: string;
   is_featured: boolean;
+  media_type?: MediaType;
+  display_order?: number;
 }
 
 export interface PriceTier {

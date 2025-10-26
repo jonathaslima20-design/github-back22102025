@@ -1,14 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { PlayCircle, X } from 'lucide-react';
+import { PlayCircle, X, Video } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import 'photoswipe/dist/photoswipe.css';
 import { Gallery, Item } from 'react-photoswipe-gallery';
+import { getYouTubeThumbnailUrl } from '@/utils/youtubeUtils';
+import type { ProductImage } from '@/types';
 
 interface ImageGalleryProps {
-  images: string[];
+  media: ProductImage[];
   title: string;
-  videoUrl?: string;
 }
 
 interface ImageDimensions {
@@ -16,17 +17,19 @@ interface ImageDimensions {
   height: number;
 }
 
-export default function ImageGallery({ images, title, videoUrl }: ImageGalleryProps) {
-  const [showVideo, setShowVideo] = useState(false);
-  const [currentMainImageIndex, setCurrentMainImageIndex] = useState(0);
+export default function ImageGallery({ media, title }: ImageGalleryProps) {
+  const [selectedVideoUrl, setSelectedVideoUrl] = useState<string | null>(null);
+  const [currentMainIndex, setCurrentMainIndex] = useState(0);
   const [imageDimensions, setImageDimensions] = useState<ImageDimensions[]>([]);
   const galleryRefs = useRef<(() => void)[]>([]);
 
-  // Load image dimensions when images change
+  const imageItems = media.filter(item => item.media_type !== 'video');
+  const videoItems = media.filter(item => item.media_type === 'video');
+
   useEffect(() => {
     const loadImageDimensions = async () => {
       const dimensions = await Promise.all(
-        images.map((src) => {
+        imageItems.map((item) => {
           return new Promise<ImageDimensions>((resolve) => {
             const img = new Image();
             img.onload = () => {
@@ -36,86 +39,106 @@ export default function ImageGallery({ images, title, videoUrl }: ImageGalleryPr
               });
             };
             img.onerror = () => {
-              // Fallback dimensions if image fails to load
               resolve({
                 width: 1000,
                 height: 1000,
               });
             };
-            img.src = src;
+            img.src = item.url;
           });
         })
       );
       setImageDimensions(dimensions);
     };
 
-    if (images.length > 0) {
+    if (imageItems.length > 0) {
       loadImageDimensions();
     }
-  }, [images]);
+  }, [media]);
 
-  // Handle main image click - open gallery at current index
-  const handleMainImageClick = () => {
-    if (galleryRefs.current[currentMainImageIndex]) {
-      galleryRefs.current[currentMainImageIndex]();
+  const handleMainClick = () => {
+    const currentItem = media[currentMainIndex];
+    if (currentItem.media_type === 'video') {
+      setSelectedVideoUrl(currentItem.url);
+    } else {
+      const imageIndex = imageItems.findIndex(img => img.id === currentItem.id);
+      if (galleryRefs.current[imageIndex]) {
+        galleryRefs.current[imageIndex]();
+      }
     }
   };
+
+  const currentMainItem = media[currentMainIndex];
 
   return (
     <>
       <div className="mb-8">
         <Gallery>
           <div className="grid grid-cols-12 gap-4">
-            {/* Main featured image - NO Item wrapper to avoid duplication */}
             <div className="col-span-12 mb-4">
               <motion.div
-                onClick={handleMainImageClick}
-                className="cursor-pointer aspect-square overflow-hidden rounded-lg"
+                onClick={handleMainClick}
+                className="cursor-pointer aspect-square overflow-hidden rounded-lg relative"
                 whileHover={{ scale: 1.02 }}
                 transition={{ duration: 0.2 }}
               >
-                <img
-                  src={images[currentMainImageIndex]}
-                  alt={`${title} - Imagem principal`}
-                  className="w-full h-full object-cover"
-                  loading="eager"
-                />
+                {currentMainItem.media_type === 'video' ? (
+                  <>
+                    <img
+                      src={getYouTubeThumbnailUrl(currentMainItem.url.split('/').pop()!)}
+                      alt={`${title} - Vídeo`}
+                      className="w-full h-full object-cover"
+                      loading="eager"
+                    />
+                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                      <div className="text-center">
+                        <Video className="h-20 w-20 text-white mx-auto mb-2" />
+                        <p className="text-white text-sm font-medium">Clique para assistir</p>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <img
+                    src={currentMainItem.url}
+                    alt={`${title} - Imagem principal`}
+                    className="w-full h-full object-cover"
+                    loading="eager"
+                  />
+                )}
               </motion.div>
             </div>
 
-            {/* Thumbnail grid - these are the actual gallery items */}
-            {images.map((image, index) => (
-              <div key={index} className="col-span-3">
+            {imageItems.map((image, index) => (
+              <div key={image.id} className="col-span-3">
                 {imageDimensions[index] && (
                   <Item
-                    original={image}
-                    thumbnail={image}
+                    original={image.url}
+                    thumbnail={image.url}
                     width={imageDimensions[index].width.toString()}
                     height={imageDimensions[index].height.toString()}
                   >
                     {({ ref, open }) => {
-                      // Store the open function for this image
                       galleryRefs.current[index] = open;
-                      
+                      const mediaIndex = media.findIndex(m => m.id === image.id);
+
                       return (
                         <motion.div
                           ref={ref as any}
                           onClick={(e) => {
-                            // Single click changes main image
                             e.stopPropagation();
-                            setCurrentMainImageIndex(index);
+                            setCurrentMainIndex(mediaIndex);
                           }}
-                          onDoubleClick={open} // Double click opens gallery
+                          onDoubleClick={open}
                           className={`cursor-pointer aspect-[4/3] overflow-hidden rounded-lg border-2 transition-all ${
-                            currentMainImageIndex === index 
-                              ? 'border-primary shadow-md' 
+                            currentMainIndex === mediaIndex
+                              ? 'border-primary shadow-md'
                               : 'border-transparent hover:border-primary/50'
                           }`}
                           whileHover={{ scale: 1.02 }}
                           transition={{ duration: 0.2 }}
                         >
                           <img
-                            src={image}
+                            src={image.url}
                             alt={`${title} - Imagem ${index + 1}`}
                             className="w-full h-full object-cover"
                             loading="lazy"
@@ -127,43 +150,53 @@ export default function ImageGallery({ images, title, videoUrl }: ImageGalleryPr
                 )}
               </div>
             ))}
-            
-            {/* Video thumbnail */}
-            {videoUrl && (
-              <div className="col-span-3">
-                <div 
-                  className="cursor-pointer aspect-[4/3] overflow-hidden rounded-lg relative group"
-                  onClick={() => setShowVideo(true)}
-                >
-                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center group-hover:bg-black/60 transition-colors">
-                    <PlayCircle className="h-8 w-8 text-white opacity-80 group-hover:opacity-100 transition-opacity" />
-                  </div>
-                  <img
-                    src={images[0]}
-                    alt="Video thumbnail"
-                    className="w-full h-full object-cover"
-                  />
+
+            {videoItems.map((video) => {
+              const videoId = video.url.split('/').pop()!;
+              const mediaIndex = media.findIndex(m => m.id === video.id);
+
+              return (
+                <div key={video.id} className="col-span-3">
+                  <motion.div
+                    className={`cursor-pointer aspect-[4/3] overflow-hidden rounded-lg relative border-2 transition-all ${
+                      currentMainIndex === mediaIndex
+                        ? 'border-primary shadow-md'
+                        : 'border-transparent hover:border-primary/50'
+                    }`}
+                    onClick={() => setCurrentMainIndex(mediaIndex)}
+                    onDoubleClick={() => setSelectedVideoUrl(video.url)}
+                    whileHover={{ scale: 1.02 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <img
+                      src={getYouTubeThumbnailUrl(videoId)}
+                      alt="Video thumbnail"
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                      <PlayCircle className="h-10 w-10 text-white" />
+                    </div>
+                  </motion.div>
                 </div>
-              </div>
-            )}
+              );
+            })}
           </div>
         </Gallery>
       </div>
 
-      {/* Video Modal */}
-      {showVideo && videoUrl && (
+      {selectedVideoUrl && (
         <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
           <div className="relative w-full max-w-5xl aspect-video bg-black rounded-lg overflow-hidden">
             <Button
               variant="ghost"
               size="icon"
               className="absolute top-2 right-2 z-10 text-white hover:text-white/80"
-              onClick={() => setShowVideo(false)}
+              onClick={() => setSelectedVideoUrl(null)}
             >
               <X className="h-6 w-6" />
             </Button>
             <iframe
-              src={videoUrl}
+              src={`${selectedVideoUrl}?autoplay=1`}
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
               className="w-full h-full"

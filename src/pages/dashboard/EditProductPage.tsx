@@ -68,6 +68,8 @@ export default function EditProductPage() {
     url: string;
     file?: File;
     isFeatured: boolean;
+    mediaType: 'image' | 'video';
+    videoId?: string;
   }>>([]);
   const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
   const [pricingMode, setPricingMode] = useState<'simple' | 'tiered'>('simple');
@@ -146,29 +148,45 @@ export default function EditProductPage() {
           url: string;
           file?: File;
           isFeatured: boolean;
+          mediaType: 'image' | 'video';
+          videoId?: string;
         }> = [];
 
         if (product.featured_image_url) {
           allImages.push({
             id: 'featured-existing',
             url: product.featured_image_url,
-            isFeatured: true
+            isFeatured: true,
+            mediaType: 'image'
           });
         }
 
         const { data: images, error: imagesError } = await supabase
           .from('product_images')
-          .select('*')
-          .eq('product_id', id);
+          .select('id, url, is_featured, media_type, display_order')
+          .eq('product_id', id)
+          .order('display_order', { ascending: true });
 
         if (imagesError) throw imagesError;
         if (images) {
           images.forEach(img => {
-            allImages.push({
-              id: img.id,
-              url: img.url,
-              isFeatured: false
-            });
+            if (img.media_type === 'video') {
+              const videoId = img.url.split('/').pop() || '';
+              allImages.push({
+                id: img.id,
+                url: img.url,
+                isFeatured: false,
+                mediaType: 'video',
+                videoId
+              });
+            } else {
+              allImages.push({
+                id: img.id,
+                url: img.url,
+                isFeatured: false,
+                mediaType: 'image'
+              });
+            }
           });
         }
 
@@ -289,33 +307,43 @@ export default function EditProductPage() {
         if (deleteError) throw deleteError;
       }
 
-      const newImages = productImages.filter(img => !img.isFeatured && img.file);
+      const newMedia = productImages.filter(img => !img.isFeatured && (img.file || img.mediaType === 'video'));
 
-      if (newImages.length > 0) {
-        const imageUrls = await Promise.all(
-          newImages.map(async (image) => {
-            if (image.file) {
-              const url = await uploadImage(image.file, user.id, 'product');
-              return url;
+      if (newMedia.length > 0) {
+        const mediaRecords = await Promise.all(
+          newMedia.map(async (item, index) => {
+            if (item.mediaType === 'video') {
+              return {
+                product_id: id,
+                url: item.url,
+                is_featured: false,
+                media_type: 'video',
+                display_order: index + 1
+              };
+            } else if (item.file) {
+              const url = await uploadImage(item.file, user.id, 'product');
+              if (url) {
+                return {
+                  product_id: id,
+                  url: url,
+                  is_featured: false,
+                  media_type: 'image',
+                  display_order: index + 1
+                };
+              }
             }
             return null;
           })
         );
 
-        const imageRecords = imageUrls
-          .filter(url => url !== null)
-          .map(url => ({
-            product_id: id,
-            url: url!,
-            is_featured: false,
-          }));
+        const validRecords = mediaRecords.filter(record => record !== null);
 
-        if (imageRecords.length > 0) {
-          const { error: imagesError } = await supabase
+        if (validRecords.length > 0) {
+          const { error: mediaError } = await supabase
             .from('product_images')
-            .insert(imageRecords);
+            .insert(validRecords);
 
-          if (imagesError) throw imagesError;
+          if (mediaError) throw mediaError;
         }
       }
 

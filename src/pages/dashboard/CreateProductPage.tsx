@@ -60,6 +60,8 @@ export default function CreateProductPage() {
     url: string;
     file?: File;
     isFeatured: boolean;
+    mediaType: 'image' | 'video';
+    videoId?: string;
   }>>([]);
   const [pricingMode, setPricingMode] = useState<'simple' | 'tiered'>('simple');
   const [priceTiers, setPriceTiers] = useState<PriceTier[]>([]);
@@ -150,33 +152,43 @@ export default function CreateProductPage() {
 
       if (productError) throw productError;
 
-      const additionalImages = productImages.filter(img => !img.isFeatured && img.file);
+      const additionalMedia = productImages.filter(img => !img.isFeatured);
 
-      if (additionalImages.length > 0) {
-        const imageUrls = await Promise.all(
-          additionalImages.map(async (image) => {
-            if (image.file) {
-              const url = await uploadImage(image.file, user.id, 'product');
-              return url;
+      if (additionalMedia.length > 0) {
+        const mediaRecords = await Promise.all(
+          additionalMedia.map(async (item, index) => {
+            if (item.mediaType === 'video') {
+              return {
+                product_id: product.id,
+                url: item.url,
+                is_featured: false,
+                media_type: 'video',
+                display_order: index + 1
+              };
+            } else if (item.file) {
+              const url = await uploadImage(item.file, user.id, 'product');
+              if (url) {
+                return {
+                  product_id: product.id,
+                  url: url,
+                  is_featured: false,
+                  media_type: 'image',
+                  display_order: index + 1
+                };
+              }
             }
             return null;
           })
         );
 
-        const imageRecords = imageUrls
-          .filter(url => url !== null)
-          .map(url => ({
-            product_id: product.id,
-            url: url,
-            is_featured: false,
-          }));
+        const validRecords = mediaRecords.filter(record => record !== null);
 
-        if (imageRecords.length > 0) {
-          const { error: imagesError } = await supabase
+        if (validRecords.length > 0) {
+          const { error: mediaError } = await supabase
             .from('product_images')
-            .insert(imageRecords);
+            .insert(validRecords);
 
-          if (imagesError) throw imagesError;
+          if (mediaError) throw mediaError;
         }
       }
 
