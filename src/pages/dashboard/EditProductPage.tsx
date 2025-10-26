@@ -42,7 +42,6 @@ const productSchema = z.object({
   brand: z.string().optional(),
   model: z.string().optional(),
   condition: z.enum(['novo', 'usado', 'seminovo']).default('novo'),
-  video_url: z.string().optional(),
   external_checkout_url: z.string().optional(),
   is_visible_on_storefront: z.boolean().default(true),
   colors: z.array(z.string()).default([]),
@@ -94,7 +93,6 @@ export default function EditProductPage() {
       brand: '',
       model: '',
       condition: 'novo',
-      video_url: '',
       external_checkout_url: '',
       is_visible_on_storefront: true,
       colors: [],
@@ -136,7 +134,6 @@ export default function EditProductPage() {
           brand: product.brand || '',
           model: product.model || '',
           condition: product.condition,
-          video_url: product.video_url || '',
           external_checkout_url: product.external_checkout_url || '',
           is_visible_on_storefront: product.is_visible_on_storefront,
           colors: product.colors || [],
@@ -289,7 +286,6 @@ export default function EditProductPage() {
         model: data.model || '',
         condition: data.condition,
         featured_image_url: featuredImageUrl,
-        video_url: data.video_url || '',
         external_checkout_url: data.external_checkout_url || '',
         is_visible_on_storefront: data.is_visible_on_storefront,
         colors: data.colors,
@@ -688,23 +684,6 @@ export default function EditProductPage() {
                 onChange={handleImagesChange}
                 maxImages={10}
                 maxFileSize={5}
-              />
-
-              <FormField
-                control={form.control}
-                name="video_url"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>URL do Vídeo</FormLabel>
-                    <FormControl>
-                      <Input placeholder="https://youtube.com/..." {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      Cole o link de um vídeo do YouTube ou outro serviço
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
               />
             </CardContent>
           </Card>

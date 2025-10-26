@@ -42,7 +42,6 @@ const productSchema = z.object({
   brand: z.string().optional(),
   model: z.string().optional(),
   condition: z.enum(['novo', 'usado', 'seminovo']).default('novo'),
-  video_url: z.string().optional(),
   external_checkout_url: z.string().optional(),
   is_visible_on_storefront: z.boolean().default(true),
   colors: z.array(z.string()).default([]),
@@ -85,7 +84,6 @@ export default function CreateProductPage() {
       brand: '',
       model: '',
       condition: 'novo',
-      video_url: '',
       external_checkout_url: '',
       is_visible_on_storefront: true,
       colors: [],
@@ -140,7 +138,6 @@ export default function CreateProductPage() {
         model: data.model || '',
         condition: data.condition,
         featured_image_url: featuredImageUrl,
-        video_url: data.video_url || '',
         external_checkout_url: data.external_checkout_url || '',
         is_visible_on_storefront: data.is_visible_on_storefront,
         colors: data.colors,
@@ -496,23 +493,6 @@ export default function CreateProductPage() {
                 onChange={setProductImages}
                 maxImages={10}
                 maxFileSize={5}
-              />
-
-              <FormField
-                control={form.control}
-                name="video_url"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>URL do Vídeo</FormLabel>
-                    <FormControl>
-                      <Input placeholder="https://youtube.com/..." {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      Cole o link de um vídeo do YouTube ou outro serviço
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
               />
             </CardContent>
           </Card>
