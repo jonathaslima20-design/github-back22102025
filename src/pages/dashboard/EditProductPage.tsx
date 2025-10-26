@@ -661,7 +661,7 @@ export default function EditProductPage() {
                     <FormLabel>Descrição Completa *</FormLabel>
                     <FormControl>
                       <RichTextEditor
-                        value={field.value}
+                        content={field.value}
                         onChange={field.onChange}
                         placeholder="Descreva seu produto em detalhes..."
                       />
