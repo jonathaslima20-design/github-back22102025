@@ -219,6 +219,7 @@ export function PromotionalBannerSection({ user, previewBanner, setPreviewBanner
             setSelectedBannerFile(null);
           }}
           open={!!showBannerCropper}
+          aspectRatio={showBannerCropper === 'desktop' ? 1530/200 : 960/200}
         />
       )}
     </>

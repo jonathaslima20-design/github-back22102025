@@ -219,6 +219,7 @@ export function CoverImageSection({ user, previewCover, setPreviewCover }: Cover
             setSelectedCoverFile(null);
           }}
           open={!!showCoverCropper}
+          aspectRatio={showCoverCropper === 'desktop' ? 1530/465 : 960/860}
         />
       )}
     </>
