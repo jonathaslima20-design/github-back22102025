@@ -281,7 +281,7 @@ export function ProductGrid({
               <div
                 {...provided.droppableProps}
                 ref={provided.innerRef}
-                className={`grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 md:gap-4 p-2 md:p-6 min-h-[400px] transition-all duration-500 ease-in-out ${
+                className={`grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 3xl:grid-cols-7 gap-2 md:gap-4 lg:gap-5 xl:gap-6 p-2 md:p-6 min-h-[400px] transition-all duration-500 ease-in-out ${
                   snapshot.isDraggingOver 
                     ? 'bg-gradient-to-br from-primary/5 to-blue-500/5 border-2 border-dashed border-primary/30 rounded-xl shadow-inner scale-[1.02]' 
                     : 'border-2 border-transparent rounded-xl scale-100'
@@ -337,7 +337,7 @@ export function ProductGrid({
         </DragDropContext>
       ) : (
         // Regular grid without drag and drop
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 md:gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 3xl:grid-cols-7 gap-2 md:gap-4 lg:gap-5 xl:gap-6">
           {products.map((product, index) => (
             <ProductCard 
               key={product.id} 
