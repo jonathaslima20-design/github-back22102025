@@ -63,6 +63,8 @@ export function ProductDistributionModal({
 
   const distributedSum = items.reduce((sum, item) => sum + item.quantity, 0);
 
+  const hasTieredPricing = product.has_tiered_pricing && tiers.length > 0;
+
   // Para preços escalonados, a quantidade total é a soma dos itens
   const effectiveTotalQuantity = hasTieredPricing ? distributedSum : totalQuantity;
 
@@ -158,8 +160,6 @@ export function ProductDistributionModal({
 
     setItems(updatedItems);
   };
-
-  const hasTieredPricing = product.has_tiered_pricing && tiers.length > 0;
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
