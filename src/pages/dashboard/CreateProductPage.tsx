@@ -43,6 +43,7 @@ const productSchema = z.object({
   model: z.string().optional(),
   condition: z.enum(['novo', 'usado', 'seminovo']).default('novo'),
   video_url: z.string().optional(),
+  external_checkout_url: z.string().optional(),
   is_visible_on_storefront: z.boolean().default(true),
   colors: z.array(z.string()).default([]),
   sizes: z.array(z.string()).default([]),
@@ -85,6 +86,7 @@ export default function CreateProductPage() {
       model: '',
       condition: 'novo',
       video_url: '',
+      external_checkout_url: '',
       is_visible_on_storefront: true,
       colors: [],
       sizes: [],
@@ -139,6 +141,7 @@ export default function CreateProductPage() {
         condition: data.condition,
         featured_image_url: featuredImageUrl,
         video_url: data.video_url || '',
+        external_checkout_url: data.external_checkout_url || '',
         is_visible_on_storefront: data.is_visible_on_storefront,
         colors: data.colors,
         sizes: data.sizes,
@@ -519,6 +522,23 @@ export default function CreateProductPage() {
               <CardTitle>Configurações</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              <FormField
+                control={form.control}
+                name="external_checkout_url"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Link Externo de Compra</FormLabel>
+                    <FormControl>
+                      <Input placeholder="https://..." {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      Se preenchido, o botão de compra redirecionará para este link externo
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <FormField
                 control={form.control}
                 name="is_visible_on_storefront"
