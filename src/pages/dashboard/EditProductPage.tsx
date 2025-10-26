@@ -226,12 +226,14 @@ export default function EditProductPage() {
     url: string;
     file?: File;
     isFeatured: boolean;
+    mediaType: 'image' | 'video';
+    videoId?: string;
   }>) => {
     const currentImageIds = new Set(productImages.map(img => img.id));
     const newImageIds = new Set(newImages.map(img => img.id));
 
     currentImageIds.forEach(id => {
-      if (!newImageIds.has(id) && id !== 'featured-existing' && !id.startsWith('new-')) {
+      if (!newImageIds.has(id) && id !== 'featured-existing' && !id.startsWith('new-') && !id.startsWith('video-')) {
         setImagesToDelete(prev => [...prev, id]);
       }
     });
