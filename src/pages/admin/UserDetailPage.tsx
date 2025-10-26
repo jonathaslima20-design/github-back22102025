@@ -11,6 +11,7 @@ import { Product } from '@/types';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useUserSubscription } from '@/hooks/useUserSubscription';
+import SubscriptionManagement from '@/components/admin/SubscriptionManagement';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,7 +44,7 @@ export default function UserDetailPage() {
     totalValue: 0,
   });
   const [activeTab, setActiveTab] = useState('produtos');
-  const { subscription, recentPayments, loading: subscriptionLoading } = useUserSubscription(userId);
+  const { subscription, recentPayments, loading: subscriptionLoading, refetch: refetchSubscription } = useUserSubscription(userId);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -500,102 +501,22 @@ export default function UserDetailPage() {
 
             <TabsContent value="assinatura" className="mt-6">
               <div className="space-y-6">
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="space-y-4">
-                      <div>
-                        <h3 className="font-semibold text-lg mb-1">Assinatura Atual</h3>
-                        <p className="text-sm text-muted-foreground">
-                          Informações sobre o plano e status de pagamento
-                        </p>
+                {subscriptionLoading ? (
+                  <Card>
+                    <CardContent className="pt-6">
+                      <div className="flex items-center justify-center py-12">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                       </div>
-
-                      {subscriptionLoading ? (
-                        <div className="flex items-center justify-center py-12">
-                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                        </div>
-                      ) : subscription ? (
-                        <div className="space-y-6">
-                          <div className="grid gap-4 sm:grid-cols-2">
-                            <div className="space-y-2">
-                              <p className="text-sm text-muted-foreground">Plano</p>
-                              <p className="font-semibold text-lg">{subscription.plan_name}</p>
-                            </div>
-
-                            <div className="space-y-2">
-                              <p className="text-sm text-muted-foreground">Valor Mensal</p>
-                              <p className="font-semibold text-lg">
-                                R$ {subscription.monthly_price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                              </p>
-                            </div>
-
-                            <div className="space-y-2">
-                              <p className="text-sm text-muted-foreground">Ciclo de Cobrança</p>
-                              <Badge variant="secondary">
-                                {subscription.billing_cycle === 'monthly' ? 'Mensal' :
-                                 subscription.billing_cycle === 'quarterly' ? 'Trimestral' :
-                                 subscription.billing_cycle === 'semiannually' ? 'Semestral' : 'Anual'}
-                              </Badge>
-                            </div>
-
-                            <div className="space-y-2">
-                              <p className="text-sm text-muted-foreground">Status</p>
-                              <div className="flex items-center gap-2">
-                                <Badge
-                                  variant={subscription.status === 'active' ? 'default' : 'secondary'}
-                                  className="gap-1"
-                                >
-                                  {subscription.status === 'active' && <CheckCircle className="h-3 w-3" />}
-                                  {subscription.status === 'suspended' && <XCircle className="h-3 w-3" />}
-                                  {subscription.status === 'pending' && <Clock className="h-3 w-3" />}
-                                  {subscription.status === 'active' ? 'Ativo' :
-                                   subscription.status === 'pending' ? 'Pendente' :
-                                   subscription.status === 'cancelled' ? 'Cancelado' : 'Suspenso'}
-                                </Badge>
-                                <Badge
-                                  variant={subscription.payment_status === 'paid' ? 'default' : 'destructive'}
-                                >
-                                  {subscription.payment_status === 'paid' ? 'Pago' :
-                                   subscription.payment_status === 'pending' ? 'Pendente' : 'Atrasado'}
-                                </Badge>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="border-t pt-4 space-y-3">
-                            <div className="flex items-center justify-between text-sm">
-                              <span className="text-muted-foreground">Data de Início</span>
-                              <span className="font-medium">
-                                {format(new Date(subscription.start_date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
-                              </span>
-                            </div>
-
-                            {subscription.end_date && (
-                              <div className="flex items-center justify-between text-sm">
-                                <span className="text-muted-foreground">Data de Término</span>
-                                <span className="font-medium">
-                                  {format(new Date(subscription.end_date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
-                                </span>
-                              </div>
-                            )}
-
-                            <div className="flex items-center justify-between text-sm">
-                              <span className="text-muted-foreground">Próximo Pagamento</span>
-                              <span className="font-medium">
-                                {format(new Date(subscription.next_payment_date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="text-center py-12">
-                          <CreditCard className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                          <p className="text-muted-foreground">Nenhuma assinatura ativa</p>
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <SubscriptionManagement
+                    subscription={subscription}
+                    userId={userId}
+                    userName={user?.name || 'Usuário'}
+                    onSubscriptionUpdate={refetchSubscription}
+                  />
+                )}
 
                 {recentPayments.length > 0 && (
                   <Card>

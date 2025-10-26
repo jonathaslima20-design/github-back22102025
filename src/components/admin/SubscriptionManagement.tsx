@@ -216,7 +216,9 @@ export default function SubscriptionManagement({
     }
   };
 
-  const updateUserPlanStatus = async (userId: string, subscriptionStatus: SubscriptionStatus) => {
+  const updateUserPlanStatus = async (userId: string | undefined, subscriptionStatus: SubscriptionStatus) => {
+    if (!userId) return;
+
     let planStatus: 'active' | 'inactive' | 'suspended' = 'inactive';
 
     if (subscriptionStatus === 'active') {
