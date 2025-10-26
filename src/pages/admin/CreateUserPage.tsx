@@ -44,21 +44,35 @@ export default function CreateUserPage() {
   const onSubmit = async (data: UserFormData) => {
     setLoading(true);
     try {
-      const isAdmin = data.role === 'admin';
+      const { data: { session } } = await supabase.auth.getSession();
 
-      const { error } = await supabase.auth.signUp({
-        email: data.email,
-        password: data.password,
-        options: {
-          data: {
-            name: data.name,
-            whatsapp: data.whatsapp,
-            is_admin: isAdmin,
-          },
+      if (!session) {
+        toast.error('Sessão expirada. Faça login novamente.');
+        return;
+      }
+
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-user`;
+
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          email: data.email,
+          password: data.password,
+          name: data.name,
+          whatsapp: data.whatsapp,
+          role: data.role,
+        }),
       });
 
-      if (error) throw error;
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Erro ao criar usuário');
+      }
 
       toast.success('Usuário criado com sucesso!');
       navigate('/admin/users');
