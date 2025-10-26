@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { supabase } from '@/lib/supabase';
+import { createUser } from '@/lib/adminApi';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -44,35 +44,13 @@ export default function CreateUserPage() {
   const onSubmit = async (data: UserFormData) => {
     setLoading(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (!session) {
-        toast.error('Sessão expirada. Faça login novamente.');
-        return;
-      }
-
-      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-user`;
-
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: data.email,
-          password: data.password,
-          name: data.name,
-          whatsapp: data.whatsapp,
-          role: data.role,
-        }),
+      await createUser({
+        email: data.email,
+        password: data.password,
+        name: data.name,
+        whatsapp: data.whatsapp || '',
+        role: data.role,
       });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Erro ao criar usuário');
-      }
 
       toast.success('Usuário criado com sucesso!');
       navigate('/admin/users');

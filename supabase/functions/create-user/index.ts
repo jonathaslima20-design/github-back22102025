@@ -84,11 +84,22 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const { data: userProfile } = await supabaseClient
+    const { data: userProfile, error: profileError } = await supabaseClient
       .from('users')
       .select('role')
       .eq('id', requestingUser.id)
-      .single();
+      .maybeSingle();
+
+    if (profileError) {
+      console.error('Error fetching user profile:', profileError);
+      return new Response(
+        JSON.stringify({ error: 'Error verifying user permissions' }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
 
     if (!userProfile || userProfile.role !== 'admin') {
       return new Response(
@@ -193,7 +204,7 @@ Deno.serve(async (req: Request) => {
 
     const slug = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '-');
 
-    const { error: profileError } = await supabaseAdmin
+    const { error: profileError2 } = await supabaseAdmin
       .from('users')
       .upsert({
         id: userId,
@@ -206,8 +217,8 @@ Deno.serve(async (req: Request) => {
         is_blocked: false,
       });
 
-    if (profileError) {
-      console.error('Error creating user profile:', profileError);
+    if (profileError2) {
+      console.error('Error creating user profile:', profileError2);
       await supabaseAdmin.auth.admin.deleteUser(userId);
       return new Response(
         JSON.stringify({ error: 'Failed to create user profile' }),

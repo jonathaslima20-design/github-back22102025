@@ -131,3 +131,47 @@ export async function cloneUserComplete(
 
   return { newUserId: data.newUserId };
 }
+
+/**
+ * Create a new user with admin privileges
+ */
+export async function createUser(userData: {
+  email: string;
+  password: string;
+  name: string;
+  whatsapp?: string;
+  role: string;
+}): Promise<{ userId: string }> {
+  const { data: { session } } = await supabase.auth.getSession();
+
+  if (!session) {
+    throw new Error('Não autenticado');
+  }
+
+  const { data, error } = await supabase.functions.invoke('create-user', {
+    body: userData,
+  });
+
+  if (error) {
+    let errorMessage = 'Erro ao criar usuário';
+    if (error.context?.body) {
+      try {
+        const errorBody = typeof error.context.body === 'string'
+          ? JSON.parse(error.context.body)
+          : error.context.body;
+        errorMessage = errorBody.error?.message || errorBody.error || errorBody.message || errorMessage;
+      } catch (parseError) {
+        errorMessage = error.message || errorMessage;
+      }
+    } else {
+      errorMessage = error.message || errorMessage;
+    }
+    throw new Error(errorMessage);
+  }
+
+  if (data?.error) {
+    throw new Error(data.error.message || data.error || 'Erro ao criar usuário');
+  }
+
+  return { userId: data.userId };
+}
