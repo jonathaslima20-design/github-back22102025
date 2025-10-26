@@ -421,7 +421,24 @@ export default function ProductDetailsPage() {
                 title={product.title}
               />
 
-              {/* Product Variants Display */}
+              {/* Tiered Pricing Table - Moved right after gallery */}
+              {product.has_tiered_pricing && (
+                <div className="mt-8">
+                  {loadingTiers ? (
+                    <TieredPricingSkeleton />
+                  ) : priceTiers.length > 0 ? (
+                    <TieredPricingTable
+                      tiers={priceTiers}
+                      basePrice={product.price || 0}
+                      baseDiscountedPrice={product.discounted_price}
+                      currency={currency}
+                      language={language}
+                    />
+                  ) : null}
+                </div>
+              )}
+
+              {/* Product Variants Display */
               {hasOptions && (
                 <div className="mt-8 space-y-6">
                   {/* Available Colors */}
@@ -580,24 +597,7 @@ export default function ProductDetailsPage() {
                 </div>
               )}
 
-              {/* Tiered Pricing Table */}
-              {product.has_tiered_pricing && (
-                <div className="mt-8">
-                  {loadingTiers ? (
-                    <TieredPricingSkeleton />
-                  ) : priceTiers.length > 0 ? (
-                    <TieredPricingTable
-                      tiers={priceTiers}
-                      basePrice={product.price || 0}
-                      baseDiscountedPrice={product.discounted_price}
-                      currency={currency}
-                      language={language}
-                    />
-                  ) : null}
-                </div>
-              )}
-
-              {/* Description */}
+              {/* Description */
               <div className="mt-8">
                 <ItemDescription description={product.description} isRichText={true} />
               </div>
