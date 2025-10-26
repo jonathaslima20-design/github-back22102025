@@ -127,6 +127,7 @@ export default function CreateProductPage() {
         description: data.description,
         short_description: data.short_description || '',
         price: pricingMode === 'simple' ? data.price : 0,
+        discounted_price: data.featured_offer_price || null,
         is_starting_price: data.is_starting_price,
         featured_offer_price: data.featured_offer_price || null,
         featured_offer_installment: data.featured_offer_installment || null,
