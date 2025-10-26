@@ -73,151 +73,153 @@ export default function CreateUserPage() {
   return (
     <div className="container mx-auto p-6 max-w-3xl">
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-semibold text-foreground">Criar Novo Usuário</h1>
-          <p className="text-sm text-muted-foreground mt-1">Cadastre um novo usuário e configure sua assinatura</p>
-        </div>
+        <div className="bg-card rounded-lg border p-8">
+          <div className="mb-8">
+            <h1 className="text-2xl font-semibold text-foreground mb-2">Criar Novo Usuário</h1>
+            <p className="text-sm text-muted-foreground">Cadastre um novo usuário e configure sua assinatura</p>
+          </div>
 
-        <div className="bg-card rounded-lg border p-6">
-          <h2 className="text-lg font-semibold mb-6">Informações do Usuário</h2>
+          <div className="space-y-6">
+            <h2 className="text-lg font-semibold text-foreground">Informações do Usuário</h2>
 
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm font-normal text-foreground">Nome Completo</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder=""
-                        className="h-11 bg-background"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm font-normal text-foreground">Email</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="email"
-                        placeholder="jonathaslima@live.com"
-                        className="h-11 bg-muted/50"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm font-normal text-foreground">Senha</FormLabel>
-                    <FormControl>
-                      <PasswordInput
-                        placeholder="••••••"
-                        className="h-11 bg-muted/50"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormDescription className="text-xs text-muted-foreground mt-1">
-                      Mínimo de 6 caracteres
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="confirmPassword"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm font-normal text-foreground">Confirmar Senha</FormLabel>
-                    <FormControl>
-                      <PasswordInput
-                        placeholder=""
-                        className="h-11 bg-background"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="role"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm font-normal text-foreground">Função</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium text-foreground">Nome Completo</FormLabel>
                       <FormControl>
-                        <SelectTrigger className="h-11 bg-background">
-                          <SelectValue placeholder="Vendedor" />
-                        </SelectTrigger>
+                        <Input
+                          placeholder=""
+                          className="h-11"
+                          {...field}
+                        />
                       </FormControl>
-                      <SelectContent>
-                        <SelectItem value="vendedor">Vendedor</SelectItem>
-                        <SelectItem value="admin">Administrador</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name="whatsapp"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm font-normal text-foreground">WhatsApp</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="(99) 99999-9999"
-                        className="h-11 bg-background"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium text-foreground">Email</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="email"
+                          placeholder="jonathaslima@live.com"
+                          className="h-11 bg-blue-50/50 dark:bg-blue-950/20"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <div className="flex gap-3 pt-4">
-                <Button
-                  type="submit"
-                  disabled={loading}
-                  className="h-11 px-6"
-                >
-                  {loading ? 'Criando...' : 'Criar Usuário'}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => navigate(-1)}
-                  className="h-11 px-6"
-                >
-                  Cancelar
-                </Button>
-              </div>
-            </form>
-          </Form>
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium text-foreground">Senha</FormLabel>
+                      <FormControl>
+                        <PasswordInput
+                          placeholder="••••••"
+                          className="h-11 bg-blue-50/50 dark:bg-blue-950/20"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription className="text-xs text-muted-foreground">
+                        Mínimo de 6 caracteres
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="confirmPassword"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium text-foreground">Confirmar Senha</FormLabel>
+                      <FormControl>
+                        <PasswordInput
+                          placeholder=""
+                          className="h-11"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="role"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium text-foreground">Função</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger className="h-11">
+                            <SelectValue placeholder="Vendedor" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="vendedor">Vendedor</SelectItem>
+                          <SelectItem value="admin">Administrador</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="whatsapp"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium text-foreground">WhatsApp</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="(99) 99999-9999"
+                          className="h-11"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="flex gap-3 pt-4">
+                  <Button
+                    type="submit"
+                    disabled={loading}
+                    className="h-11 px-8"
+                  >
+                    {loading ? 'Criando...' : 'Criar Usuário'}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => navigate(-1)}
+                    className="h-11 px-8"
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </div>
         </div>
       </div>
     </div>
