@@ -16,7 +16,6 @@ import { DiscountPriceInput } from '@/components/ui/discount-price-input';
 import { CategorySelector } from '@/components/ui/category-selector';
 import { GenderSelector } from '@/components/ui/gender-selector';
 import { SizesColorsSelector } from '@/components/ui/sizes-colors-selector';
-import { ImageCropperProduct } from '@/components/ui/image-cropper-product';
 import { TieredPricingManager } from '@/components/ui/tiered-pricing-manager';
 import { PricingModeToggle } from '@/components/ui/pricing-mode-toggle';
 import { ProductImageManager } from '@/components/product/ProductImageManager';

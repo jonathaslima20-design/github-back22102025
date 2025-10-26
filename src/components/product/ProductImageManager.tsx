@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Upload, X, Star, Image as ImageIcon, Scissors } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ImageCropperProduct } from '@/components/ui/image-cropper-product';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -256,23 +255,15 @@ export function ProductImageManager({
         )}
       </div>
 
-      <Dialog open={showCropper} onOpenChange={(open) => !open && handleCropCancel()}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>
-              Ajustar Imagem {pendingFiles.length > 1 && `(${currentFileIndex + 1} de ${pendingFiles.length})`}
-            </DialogTitle>
-          </DialogHeader>
-          {selectedFile && (
-            <ImageCropperProduct
-              image={URL.createObjectURL(selectedFile)}
-              onCrop={handleCropComplete}
-              onCancel={handleCropCancel}
-              aspectRatio={1}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+      {selectedFile && (
+        <ImageCropperProduct
+          image={URL.createObjectURL(selectedFile)}
+          onCrop={handleCropComplete}
+          onCancel={handleCropCancel}
+          aspectRatio={1}
+          open={showCropper}
+        />
+      )}
     </>
   );
 }

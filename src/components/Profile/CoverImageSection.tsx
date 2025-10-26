@@ -218,6 +218,7 @@ export function CoverImageSection({ user, previewCover, setPreviewCover }: Cover
             setShowCoverCropper(null);
             setSelectedCoverFile(null);
           }}
+          open={!!showCoverCropper}
         />
       )}
     </>

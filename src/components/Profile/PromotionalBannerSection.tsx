@@ -218,6 +218,7 @@ export function PromotionalBannerSection({ user, previewBanner, setPreviewBanner
             setShowBannerCropper(null);
             setSelectedBannerFile(null);
           }}
+          open={!!showBannerCropper}
         />
       )}
     </>

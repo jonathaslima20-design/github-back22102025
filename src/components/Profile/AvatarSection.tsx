@@ -115,6 +115,7 @@ export function AvatarSection({ user, previewImage, setPreviewImage }: AvatarSec
             setSelectedFile(null);
           }}
           aspectRatio={1}
+          open={showCropper}
         />
       )}
     </>
