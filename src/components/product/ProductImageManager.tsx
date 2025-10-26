@@ -30,6 +30,7 @@ export function ProductImageManager({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [currentFileIndex, setCurrentFileIndex] = useState(0);
+  const [imageToRecrop, setImageToRecrop] = useState<ImageItem | null>(null);
 
   const handleFileSelect = (files: FileList | null) => {
     if (!files) return;
@@ -63,6 +64,24 @@ export function ProductImageManager({
   };
 
   const handleCropComplete = async (croppedBlob: Blob) => {
+    if (imageToRecrop) {
+      const croppedFile = new File([croppedBlob], `recropped-${Date.now()}.jpg`, {
+        type: 'image/jpeg',
+      });
+
+      const updatedImages = images.map(img =>
+        img.id === imageToRecrop.id
+          ? { ...img, url: URL.createObjectURL(croppedFile), file: croppedFile }
+          : img
+      );
+
+      onChange(updatedImages);
+      setShowCropper(false);
+      setImageToRecrop(null);
+      toast.success('Imagem recortada com sucesso');
+      return;
+    }
+
     if (!selectedFile) return;
 
     const croppedFile = new File([croppedBlob], selectedFile.name, {
@@ -96,6 +115,12 @@ export function ProductImageManager({
     setSelectedFile(null);
     setPendingFiles([]);
     setCurrentFileIndex(0);
+    setImageToRecrop(null);
+  };
+
+  const handleRecropImage = (image: ImageItem) => {
+    setImageToRecrop(image);
+    setShowCropper(true);
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -172,6 +197,16 @@ export function ProductImageManager({
                         "h-4 w-4",
                         image.isFeatured && "fill-current"
                       )} />
+                    </Button>
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="secondary"
+                      className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => handleRecropImage(image)}
+                      title="Recortar imagem"
+                    >
+                      <Scissors className="h-4 w-4" />
                     </Button>
                     <Button
                       type="button"
@@ -255,9 +290,9 @@ export function ProductImageManager({
         )}
       </div>
 
-      {selectedFile && (
+      {(selectedFile || imageToRecrop) && (
         <ImageCropperProduct
-          image={URL.createObjectURL(selectedFile)}
+          image={imageToRecrop ? imageToRecrop.url : URL.createObjectURL(selectedFile!)}
           onCrop={handleCropComplete}
           onCancel={handleCropCancel}
           aspectRatio={1}
