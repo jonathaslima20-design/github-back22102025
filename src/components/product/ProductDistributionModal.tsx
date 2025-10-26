@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, Check, Plus, X, Package } from 'lucide-react';
+import { CircleAlert as AlertCircle, Check, Plus, X, Package } from 'lucide-react';
 import type { Product, PriceTier } from '@/types';
 import { fetchProductPriceTiers, calculateApplicablePrice } from '@/lib/tieredPricingUtils';
 import { validateDistribution } from '@/lib/distributionUtils';
