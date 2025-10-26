@@ -1,5 +1,5 @@
 /*
-  # Clone User Edge Function (Public - No JWT Required)
+  # Clone User Edge Function
 
   This function handles complete user cloning with all associated data.
 
@@ -10,21 +10,21 @@
     - Maintains data integrity and relationships
 
   2. Security
-    - Uses API Key authentication (X-API-Key header)
+    - Uses JWT authentication (Authorization header)
+    - Only admins can clone users
     - Validates email uniqueness
     - Rate limiting and input validation
     - Handles errors gracefully with rollback capability
 
   3. Usage
-    - Header required: X-API-Key with valid secret key
-    - No JWT/Authorization needed
+    - Requires valid admin JWT token
 */
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'x-api-key, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Client-Info, Apikey',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
@@ -36,12 +36,6 @@ interface CloneUserRequest {
     name: string;
     slug: string;
   };
-}
-
-interface CloneProgress {
-  step: string;
-  progress: number;
-  message: string;
 }
 
 Deno.serve(async (req: Request) => {
@@ -60,13 +54,10 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const apiKey = req.headers.get('X-API-Key');
-    const validApiKey = Deno.env.get('CLONE_USER_API_KEY');
-
-    if (!apiKey) {
-      console.error('Missing API Key');
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
       return new Response(
-        JSON.stringify({ error: { message: 'Missing X-API-Key header' } }),
+        JSON.stringify({ error: { message: 'Missing Authorization header' } }),
         {
           status: 401,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -74,21 +65,37 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    if (!validApiKey) {
-      console.error('CLONE_USER_API_KEY not configured in environment');
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: { Authorization: authHeader },
+        },
+      }
+    );
+
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+
+    if (userError || !user) {
       return new Response(
-        JSON.stringify({ error: { message: 'Server configuration error' } }),
+        JSON.stringify({ error: { message: 'Unauthorized' } }),
         {
-          status: 500,
+          status: 401,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       );
     }
 
-    if (apiKey !== validApiKey) {
-      console.error('Invalid API Key provided');
+    const { data: userData, error: userDataError } = await supabaseClient
+      .from('users')
+      .select('role')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (userDataError || !userData || userData.role !== 'admin') {
       return new Response(
-        JSON.stringify({ error: { message: 'Invalid API Key' } }),
+        JSON.stringify({ error: { message: 'Admin access required' } }),
         {
           status: 403,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -96,7 +103,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    console.log('API Key validated successfully');
+    console.log('Admin user authenticated:', user.id);
 
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',

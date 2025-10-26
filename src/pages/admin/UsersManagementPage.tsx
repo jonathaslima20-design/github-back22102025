@@ -6,6 +6,8 @@ import { UserTable } from '@/components/admin/UserTable';
 import { UserListControls } from '@/components/admin/UserListControls';
 import { UserSummaryCards } from '@/components/admin/UserSummaryCards';
 import { FloatingUserBulkActions } from '@/components/admin/FloatingUserBulkActions';
+import { CloneUserDialog } from '@/components/admin/CloneUserDialog';
+import { SimpleCopyProductsDialog } from '@/components/admin/SimpleCopyProductsDialog';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -22,10 +24,37 @@ export default function UsersManagementPage() {
   const [roleFilter, setRoleFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [planFilter, setPlanFilter] = useState('all');
+  const [cloneDialogOpen, setCloneDialogOpen] = useState(false);
+  const [cloneSourceUserId, setCloneSourceUserId] = useState<string>('');
+  const [copyProductsDialogOpen, setCopyProductsDialogOpen] = useState(false);
+  const [copyProductsSourceUserId, setCopyProductsSourceUserId] = useState<string>('');
 
   // Fetch users data
   useEffect(() => {
     fetchUsers();
+  }, []);
+
+  // Listen for clone user dialog events
+  useEffect(() => {
+    const handleOpenCloneDialog = (e: Event) => {
+      const customEvent = e as CustomEvent<{ targetUserId: string }>;
+      setCloneSourceUserId(customEvent.detail.targetUserId);
+      setCloneDialogOpen(true);
+    };
+
+    const handleOpenCopyProducts = (e: Event) => {
+      const customEvent = e as CustomEvent<{ targetUserId: string }>;
+      setCopyProductsSourceUserId(customEvent.detail.targetUserId);
+      setCopyProductsDialogOpen(true);
+    };
+
+    window.addEventListener('openCloneUserDialog', handleOpenCloneDialog);
+    window.addEventListener('openCopyProducts', handleOpenCopyProducts);
+
+    return () => {
+      window.removeEventListener('openCloneUserDialog', handleOpenCloneDialog);
+      window.removeEventListener('openCopyProducts', handleOpenCopyProducts);
+    };
   }, []);
 
   // Filter users based on search and filters
@@ -246,6 +275,21 @@ export default function UsersManagementPage() {
           currentUserRole={currentUser?.role || 'user'}
         />
       )}
+
+      <CloneUserDialog
+        open={cloneDialogOpen}
+        onOpenChange={setCloneDialogOpen}
+        sourceUserId={cloneSourceUserId}
+        onSuccess={() => {
+          fetchUsers();
+        }}
+      />
+
+      <SimpleCopyProductsDialog
+        open={copyProductsDialogOpen}
+        onOpenChange={setCopyProductsDialogOpen}
+        sourceUserId={copyProductsSourceUserId}
+      />
     </div>
   );
 }
