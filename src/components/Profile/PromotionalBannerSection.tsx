@@ -104,14 +104,14 @@ export function PromotionalBannerSection({ user, previewBanner, setPreviewBanner
         <div>
           <h3 className="font-semibold mb-2">Banner Desktop</h3>
           <p className="text-sm text-muted-foreground mb-4">
-            Recomendado: 1920x200px (JPG, PNG ou GIF - máx. 5MB)
+            Recomendado: 1530x200px (JPG, PNG ou GIF - máx. 5MB)
           </p>
           {previewBanner.desktop && (
             <div className="relative mb-4 rounded-lg overflow-hidden border">
               <img
                 src={previewBanner.desktop}
                 alt="Banner Desktop"
-                className="w-full h-24 object-cover"
+                className="w-full aspect-[1530/200] object-cover"
               />
               <Button
                 type="button"
@@ -158,14 +158,14 @@ export function PromotionalBannerSection({ user, previewBanner, setPreviewBanner
         <div>
           <h3 className="font-semibold mb-2">Banner Mobile</h3>
           <p className="text-sm text-muted-foreground mb-4">
-            Recomendado: 768x200px (JPG, PNG ou GIF - máx. 5MB)
+            Recomendado: 960x200px (JPG, PNG ou GIF - máx. 5MB)
           </p>
           {previewBanner.mobile && (
             <div className="relative mb-4 rounded-lg overflow-hidden border">
               <img
                 src={previewBanner.mobile}
                 alt="Banner Mobile"
-                className="w-full h-24 object-cover"
+                className="w-full aspect-[960/200] object-cover"
               />
               <Button
                 type="button"

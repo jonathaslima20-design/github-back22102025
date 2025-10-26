@@ -104,14 +104,14 @@ export function CoverImageSection({ user, previewCover, setPreviewCover }: Cover
         <div>
           <h3 className="font-semibold mb-2">Capa Desktop</h3>
           <p className="text-sm text-muted-foreground mb-4">
-            Recomendado: 1920x400px (JPG, PNG ou GIF - máx. 5MB)
+            Recomendado: 1530x465px (JPG, PNG ou GIF - máx. 5MB)
           </p>
           {previewCover.desktop && (
             <div className="relative mb-4 rounded-lg overflow-hidden border">
               <img
                 src={previewCover.desktop}
                 alt="Capa Desktop"
-                className="w-full h-32 object-cover"
+                className="w-full aspect-[1530/465] object-cover"
               />
               <Button
                 type="button"
@@ -158,14 +158,14 @@ export function CoverImageSection({ user, previewCover, setPreviewCover }: Cover
         <div>
           <h3 className="font-semibold mb-2">Capa Mobile</h3>
           <p className="text-sm text-muted-foreground mb-4">
-            Recomendado: 768x400px (JPG, PNG ou GIF - máx. 5MB)
+            Recomendado: 960x860px (JPG, PNG ou GIF - máx. 5MB)
           </p>
           {previewCover.mobile && (
             <div className="relative mb-4 rounded-lg overflow-hidden border">
               <img
                 src={previewCover.mobile}
                 alt="Capa Mobile"
-                className="w-full h-32 object-cover"
+                className="w-full aspect-[960/860] object-cover"
               />
               <Button
                 type="button"
