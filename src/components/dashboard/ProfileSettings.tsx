@@ -429,11 +429,106 @@ export function ProfileSettings() {
                       maxLength={15}
                     />
                   </FormControl>
+                  <p className="text-xs text-muted-foreground">
+                    Aceita números fixos (10 dígitos) e móveis (11 dígitos)
+                  </p>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="instagram"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Instagram</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      placeholder="instagram"
+                      maxLength={50}
+                    />
+                  </FormControl>
+                  <p className="text-xs text-muted-foreground">
+                    Digite apenas o nome de usuário, sem o '@' ou o link completo
+                  </p>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="location_url"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Link de Localização</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      placeholder="https://maps.app.goo.gl/FtpwtPbZFrrsR5kQL8"
+                      type="url"
+                    />
+                  </FormControl>
+                  <p className="text-xs text-muted-foreground">
+                    Link do Google Maps ou outro serviço de localização
+                  </p>
                   <FormMessage />
                 </FormItem>
               )}
             />
           </div>
+
+          <Separator />
+
+          {/* Link da Vitrine */}
+          <FormField
+            control={form.control}
+            name="slug"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Link da Vitrine</FormLabel>
+                <div className="flex gap-2">
+                  <div className="flex-shrink-0 flex items-center px-3 rounded-md border border-input bg-muted text-muted-foreground text-sm">
+                    vitrineturbo.com/
+                  </div>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      placeholder="kingstore"
+                      className="flex-1"
+                    />
+                  </FormControl>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  URL amigável para sua vitrine pública
+                </p>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <Separator />
+
+          {/* Biografia */}
+          <FormField
+            control={form.control}
+            name="bio"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Biografia</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    placeholder="👔 Moda masculina | Vestuário e acessórios 😎"
+                    maxLength={200}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
           <Separator />
 
