@@ -543,7 +543,7 @@ export default function ProductDetailsPage() {
                     </div>
                   )}
 
-                  {/* 3. Add to Cart Button */}
+                  {/* 3. Add to Cart Button - Always show for tiered pricing products */}
                   {isAvailable && hasPrice && (
                     <div className="mt-8 pt-2 space-y-3">
                       <Button
