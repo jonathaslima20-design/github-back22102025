@@ -426,7 +426,7 @@ export default function ProductDetailsPage() {
                 <div className="mt-8">
                   {loadingTiers ? (
                     <TieredPricingSkeleton />
-                  ) : priceTiers.length > 0 ? (
+                  ) : priceTiers.length > 0 && (
                     <TieredPricingTable
                       tiers={priceTiers}
                       basePrice={product.price || 0}
@@ -434,7 +434,7 @@ export default function ProductDetailsPage() {
                       currency={currency}
                       language={language}
                     />
-                  ) : null}
+                  )}
                 </div>
               )}
 
