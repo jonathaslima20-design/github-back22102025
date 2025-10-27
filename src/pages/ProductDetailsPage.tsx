@@ -421,186 +421,346 @@ export default function ProductDetailsPage() {
                 title={product.title}
               />
 
-              {/* Tiered Pricing Table - Moved right after gallery */}
-              {product.has_tiered_pricing && (
-                <div className="mt-8">
-                  {loadingTiers ? (
-                    <TieredPricingSkeleton />
-                  ) : priceTiers.length > 0 && (
-                    <TieredPricingTable
-                      tiers={priceTiers}
-                      basePrice={product.price || 0}
-                      baseDiscountedPrice={product.discounted_price}
-                      currency={currency}
-                      language={language}
-                    />
-                  )}
-                </div>
-              )}
+              {/* Conditional Layout: Tiered Pricing vs Regular */}
+              {product.has_tiered_pricing ? (
+                <>
+                  {/* Tiered Pricing Layout */}
 
-              {/* Product Variants Display */}
-              {hasOptions && (
-                <div className="mt-8 space-y-6">
-                  {/* Available Colors */}
-                  {hasColors && (
-                    <div className="space-y-3">
-                      <h3 className="text-lg font-semibold">Cores Disponíveis</h3>
-                      <div className="flex flex-wrap gap-3">
-                        {product.colors.map((color: string) => {
-                          const colorValue = getColorValue(color);
-                          const isLightColor = ['branco', 'amarelo', 'bege', 'off-white', 'creme'].includes(color.toLowerCase());
+                  {/* 1. Tiered Pricing Table */}
+                  <div className="mt-8">
+                    {loadingTiers ? (
+                      <TieredPricingSkeleton />
+                    ) : priceTiers.length > 0 && (
+                      <TieredPricingTable
+                        tiers={priceTiers}
+                        basePrice={product.price || 0}
+                        baseDiscountedPrice={product.discounted_price}
+                        currency={currency}
+                        language={language}
+                      />
+                    )}
+                  </div>
 
-                          return (
-                            <div
-                              key={color}
-                              className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-300 bg-background"
-                            >
-                              <div 
-                                className={`w-4 h-4 rounded-full border ${isLightColor ? 'border-gray-400' : 'border-gray-300'} shadow-sm`}
-                                style={{ backgroundColor: colorValue }}
-                              />
-                              <span className="text-sm capitalize">{color}</span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
+                  {/* 2. Product Variants Display (Colors and Sizes) */}
+                  {hasOptions && (
+                    <div className="mt-8 space-y-6">
+                      {/* Available Colors */}
+                      {hasColors && (
+                        <div className="space-y-3">
+                          <h3 className="text-lg font-semibold">Cores Disponíveis</h3>
+                          <div className="flex flex-wrap gap-3">
+                            {product.colors.map((color: string) => {
+                              const colorValue = getColorValue(color);
+                              const isLightColor = ['branco', 'amarelo', 'bege', 'off-white', 'creme'].includes(color.toLowerCase());
 
-                  {/* Available Sizes */}
-                  {hasSizes && (
-                    <div className="space-y-3">
-                      <h3 className="text-lg font-semibold">Tamanhos Disponíveis</h3>
-                      
-                      {(() => {
-                        // Separate apparel sizes from shoe sizes
-                        const apparelSizes: string[] = [];
-                        const shoeSizes: string[] = [];
-                        
-                        product.sizes.forEach((size: string) => {
-                          const numericSize = parseInt(size);
-                          if (!isNaN(numericSize) && numericSize >= 17 && numericSize <= 43) {
-                            shoeSizes.push(size);
-                          } else {
-                            apparelSizes.push(size);
-                          }
-                        });
-
-                        // Sort sizes appropriately
-                        const sortedApparelSizes = apparelSizes.sort((a, b) => {
-                          const sizeOrder = ['PP', 'P', 'M', 'G', 'GG', 'XG', 'XXG'];
-                          const indexA = sizeOrder.indexOf(a);
-                          const indexB = sizeOrder.indexOf(b);
-                          if (indexA !== -1 && indexB !== -1) return indexA - indexB;
-                          if (indexA !== -1) return -1;
-                          if (indexB !== -1) return 1;
-                          return a.localeCompare(b);
-                        });
-                        
-                        const sortedShoeSizes = shoeSizes.sort((a, b) => parseInt(a) - parseInt(b));
-
-                        return (
-                          <div className="space-y-4">
-                            {/* Apparel Sizes */}
-                            {sortedApparelSizes.length > 0 && (
-                              <div className="flex flex-wrap gap-3">
-                                  {sortedApparelSizes.map((size: string) => (
-                                    <div
-                                      key={size}
-                                      className="flex items-center justify-center w-12 h-12 rounded-full border-2 border-primary/20 bg-background shadow-sm hover:shadow-md transition-all duration-200 hover:border-primary/40"
-                                    >
-                                      <span className="text-sm font-semibold text-foreground">
-                                        {size}
-                                      </span>
-                                    </div>
-                                  ))}
+                              return (
+                                <div
+                                  key={color}
+                                  className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-300 bg-background"
+                                >
+                                  <div
+                                    className={`w-4 h-4 rounded-full border ${isLightColor ? 'border-gray-400' : 'border-gray-300'} shadow-sm`}
+                                    style={{ backgroundColor: colorValue }}
+                                  />
+                                  <span className="text-sm capitalize">{color}</span>
                                 </div>
-                            )}
-
-                            {/* Shoe Sizes */}
-                            {sortedShoeSizes.length > 0 && (
-                              <div className="flex flex-wrap gap-3">
-                                  {sortedShoeSizes.map((size: string) => (
-                                    <div
-                                      key={size}
-                                      className="flex items-center justify-center w-12 h-12 rounded-full border-2 border-primary/20 bg-background shadow-sm hover:shadow-md transition-all duration-200 hover:border-primary/40"
-                                    >
-                                      <span className="text-sm font-semibold text-foreground">
-                                        {size}
-                                      </span>
-                                    </div>
-                                  ))}
-                                </div>
-                            )}
+                              );
+                            })}
                           </div>
-                        );
-                      })()}
+                        </div>
+                      )}
+
+                      {/* Available Sizes */}
+                      {hasSizes && (
+                        <div className="space-y-3">
+                          <h3 className="text-lg font-semibold">Tamanhos Disponíveis</h3>
+
+                          {(() => {
+                            // Separate apparel sizes from shoe sizes
+                            const apparelSizes: string[] = [];
+                            const shoeSizes: string[] = [];
+
+                            product.sizes.forEach((size: string) => {
+                              const numericSize = parseInt(size);
+                              if (!isNaN(numericSize) && numericSize >= 17 && numericSize <= 43) {
+                                shoeSizes.push(size);
+                              } else {
+                                apparelSizes.push(size);
+                              }
+                            });
+
+                            // Sort sizes appropriately
+                            const sortedApparelSizes = apparelSizes.sort((a, b) => {
+                              const sizeOrder = ['PP', 'P', 'M', 'G', 'GG', 'XG', 'XXG'];
+                              const indexA = sizeOrder.indexOf(a);
+                              const indexB = sizeOrder.indexOf(b);
+                              if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+                              if (indexA !== -1) return -1;
+                              if (indexB !== -1) return 1;
+                              return a.localeCompare(b);
+                            });
+
+                            const sortedShoeSizes = shoeSizes.sort((a, b) => parseInt(a) - parseInt(b));
+
+                            return (
+                              <div className="space-y-4">
+                                {/* Apparel Sizes */}
+                                {sortedApparelSizes.length > 0 && (
+                                  <div className="flex flex-wrap gap-3">
+                                      {sortedApparelSizes.map((size: string) => (
+                                        <div
+                                          key={size}
+                                          className="flex items-center justify-center w-12 h-12 rounded-full border-2 border-primary/20 bg-background shadow-sm hover:shadow-md transition-all duration-200 hover:border-primary/40"
+                                        >
+                                          <span className="text-sm font-semibold text-foreground">
+                                            {size}
+                                          </span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                )}
+
+                                {/* Shoe Sizes */}
+                                {sortedShoeSizes.length > 0 && (
+                                  <div className="flex flex-wrap gap-3">
+                                      {sortedShoeSizes.map((size: string) => (
+                                        <div
+                                          key={size}
+                                          className="flex items-center justify-center w-12 h-12 rounded-full border-2 border-primary/20 bg-background shadow-sm hover:shadow-md transition-all duration-200 hover:border-primary/40"
+                                        >
+                                          <span className="text-sm font-semibold text-foreground">
+                                            {size}
+                                          </span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                )}
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      )}
                     </div>
                   )}
-                </div>
-              )}
 
-              {/* Add to Cart Button - Always show for available products with price */}
-              {isAvailable && hasPrice && (
-                <div className="mt-8 pt-2 space-y-3">
-                  <Button
-                    size="lg"
-                    className="w-full"
-                    onClick={handleAddToCart}
-                  >
-                    <ShoppingCart className="h-5 w-5 mr-2" />
-                    Adicionar ao Carrinho
-                  </Button>
+                  {/* 3. Add to Cart Button */}
+                  {isAvailable && hasPrice && (
+                    <div className="mt-8 pt-2 space-y-3">
+                      <Button
+                        size="lg"
+                        className="w-full"
+                        onClick={handleAddToCart}
+                      >
+                        <ShoppingCart className="h-5 w-5 mr-2" />
+                        Adicionar ao Carrinho
+                      </Button>
 
-                  {/* Distribution Button - Show only if product has tiered pricing AND variations */}
-                  {product.has_tiered_pricing && hasOptions && priceTiers.length > 0 && (
-                    <Button
-                      size="lg"
-                      variant="outline"
-                      className="w-full border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950"
-                      onClick={() => setShowDistributionModal(true)}
-                    >
-                      <Plus className="h-5 w-5 mr-2" />
-                      Distribuir Variações com Preço Escalonado
-                    </Button>
+                      {/* Distribution Button - Show only if product has tiered pricing AND variations */}
+                      {hasOptions && priceTiers.length > 0 && (
+                        <Button
+                          size="lg"
+                          variant="outline"
+                          className="w-full border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950"
+                          onClick={() => setShowDistributionModal(true)}
+                        >
+                          <Plus className="h-5 w-5 mr-2" />
+                          Distribuir Variações com Preço Escalonado
+                        </Button>
+                      )}
+                    </div>
                   )}
-                </div>
-              )}
 
-              {/* External Checkout Button - Always show if configured */}
-              {isAvailable && product.external_checkout_url && (
-                <div className="mt-4">
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="w-full"
-                    asChild
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <a 
-                      href={product.external_checkout_url} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                    >
-                      Comprar
-                    </a>
-                  </Button>
-                </div>
-              )}
+                  {/* External Checkout Button - Always show if configured */}
+                  {isAvailable && product.external_checkout_url && (
+                    <div className="mt-4">
+                      <Button
+                        variant="outline"
+                        size="lg"
+                        className="w-full"
+                        asChild
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <a
+                          href={product.external_checkout_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          Comprar
+                        </a>
+                      </Button>
+                    </div>
+                  )}
 
-              {/* Show total items in cart if any */}
-              {totalInCart > 0 && (
-                <div className="mt-6 p-4 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg">
-                  <p className="text-sm text-green-800 dark:text-green-200 text-center">
-                    {totalInCart} {totalInCart === 1 ? 'item' : 'itens'} no carrinho
-                  </p>
-                </div>
-              )}
+                  {/* Show total items in cart if any */}
+                  {totalInCart > 0 && (
+                    <div className="mt-6 p-4 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg">
+                      <p className="text-sm text-green-800 dark:text-green-200 text-center">
+                        {totalInCart} {totalInCart === 1 ? 'item' : 'itens'} no carrinho
+                      </p>
+                    </div>
+                  )}
 
-              {/* Description */}
-              <div className="mt-8">
-                <ItemDescription description={product.description} isRichText={true} />
-              </div>
+                  {/* 4. Description */}
+                  <div className="mt-8">
+                    <ItemDescription description={product.description} isRichText={true} />
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Regular Product Layout */}
+
+                  {/* Product Variants Display */}
+                  {hasOptions && (
+                    <div className="mt-8 space-y-6">
+                      {/* Available Colors */}
+                      {hasColors && (
+                        <div className="space-y-3">
+                          <h3 className="text-lg font-semibold">Cores Disponíveis</h3>
+                          <div className="flex flex-wrap gap-3">
+                            {product.colors.map((color: string) => {
+                              const colorValue = getColorValue(color);
+                              const isLightColor = ['branco', 'amarelo', 'bege', 'off-white', 'creme'].includes(color.toLowerCase());
+
+                              return (
+                                <div
+                                  key={color}
+                                  className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-300 bg-background"
+                                >
+                                  <div
+                                    className={`w-4 h-4 rounded-full border ${isLightColor ? 'border-gray-400' : 'border-gray-300'} shadow-sm`}
+                                    style={{ backgroundColor: colorValue }}
+                                  />
+                                  <span className="text-sm capitalize">{color}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Available Sizes */}
+                      {hasSizes && (
+                        <div className="space-y-3">
+                          <h3 className="text-lg font-semibold">Tamanhos Disponíveis</h3>
+
+                          {(() => {
+                            // Separate apparel sizes from shoe sizes
+                            const apparelSizes: string[] = [];
+                            const shoeSizes: string[] = [];
+
+                            product.sizes.forEach((size: string) => {
+                              const numericSize = parseInt(size);
+                              if (!isNaN(numericSize) && numericSize >= 17 && numericSize <= 43) {
+                                shoeSizes.push(size);
+                              } else {
+                                apparelSizes.push(size);
+                              }
+                            });
+
+                            // Sort sizes appropriately
+                            const sortedApparelSizes = apparelSizes.sort((a, b) => {
+                              const sizeOrder = ['PP', 'P', 'M', 'G', 'GG', 'XG', 'XXG'];
+                              const indexA = sizeOrder.indexOf(a);
+                              const indexB = sizeOrder.indexOf(b);
+                              if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+                              if (indexA !== -1) return -1;
+                              if (indexB !== -1) return 1;
+                              return a.localeCompare(b);
+                            });
+
+                            const sortedShoeSizes = shoeSizes.sort((a, b) => parseInt(a) - parseInt(b));
+
+                            return (
+                              <div className="space-y-4">
+                                {/* Apparel Sizes */}
+                                {sortedApparelSizes.length > 0 && (
+                                  <div className="flex flex-wrap gap-3">
+                                      {sortedApparelSizes.map((size: string) => (
+                                        <div
+                                          key={size}
+                                          className="flex items-center justify-center w-12 h-12 rounded-full border-2 border-primary/20 bg-background shadow-sm hover:shadow-md transition-all duration-200 hover:border-primary/40"
+                                        >
+                                          <span className="text-sm font-semibold text-foreground">
+                                            {size}
+                                          </span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                )}
+
+                                {/* Shoe Sizes */}
+                                {sortedShoeSizes.length > 0 && (
+                                  <div className="flex flex-wrap gap-3">
+                                      {sortedShoeSizes.map((size: string) => (
+                                        <div
+                                          key={size}
+                                          className="flex items-center justify-center w-12 h-12 rounded-full border-2 border-primary/20 bg-background shadow-sm hover:shadow-md transition-all duration-200 hover:border-primary/40"
+                                        >
+                                          <span className="text-sm font-semibold text-foreground">
+                                            {size}
+                                          </span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                )}
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Add to Cart Button - Always show for available products with price */}
+                  {isAvailable && hasPrice && (
+                    <div className="mt-8 pt-2 space-y-3">
+                      <Button
+                        size="lg"
+                        className="w-full"
+                        onClick={handleAddToCart}
+                      >
+                        <ShoppingCart className="h-5 w-5 mr-2" />
+                        Adicionar ao Carrinho
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* External Checkout Button - Always show if configured */}
+                  {isAvailable && product.external_checkout_url && (
+                    <div className="mt-4">
+                      <Button
+                        variant="outline"
+                        size="lg"
+                        className="w-full"
+                        asChild
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <a
+                          href={product.external_checkout_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          Comprar
+                        </a>
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Show total items in cart if any */}
+                  {totalInCart > 0 && (
+                    <div className="mt-6 p-4 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg">
+                      <p className="text-sm text-green-800 dark:text-green-200 text-center">
+                        {totalInCart} {totalInCart === 1 ? 'item' : 'itens'} no carrinho
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Description */}
+                  <div className="mt-8">
+                    <ItemDescription description={product.description} isRichText={true} />
+                  </div>
+                </>
+              )}
             </motion.div>
             
             {/* Seller Information Sidebar */}
